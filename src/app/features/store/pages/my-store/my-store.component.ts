@@ -40,6 +40,7 @@ import { EmptyStateComponent } from '../../../../shared/ui/empty-state/empty-sta
 import { InputComponent } from '../../../../shared/ui/input/input.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
 import { SelectComponent } from '../../../../shared/ui/select/select.component';
+import { GeoCoordinates, LocationPickerComponent } from '../../../../shared/ui/location-picker/location-picker.component';
 
 export const KERALA_DISTRICTS = [
   'Alappuzha',
@@ -83,6 +84,7 @@ export const BUSINESS_TYPES = [
     ButtonComponent,
     InputComponent,
     SelectComponent,
+    LocationPickerComponent,
     EmptyStateComponent,
   ],
   template: `
@@ -234,7 +236,16 @@ export const BUSINESS_TYPES = [
                   formControlName="state"
                 ></bm-input>
 
-                <!-- Coordinates -->
+                <!-- Interactive Google Map Location Picker -->
+                <div class="bm-full-col">
+                  <bm-location-picker
+                    [latitude]="createStoreForm.get('latitude')?.value"
+                    [longitude]="createStoreForm.get('longitude')?.value"
+                    (coordinatesChange)="onCoordinatesSelected($event)"
+                  ></bm-location-picker>
+                </div>
+
+                <!-- Coordinates Numeric Inputs -->
                 <bm-input
                   id="store-lat"
                   label="Store Latitude"
@@ -254,20 +265,6 @@ export const BUSINESS_TYPES = [
                   formControlName="longitude"
                   [error]="getCreateError('longitude')"
                 ></bm-input>
-              </div>
-
-              <!-- Quick Coordinate Preset Helper -->
-              <div class="bm-coord-helper">
-                <span>Auto-fill typical Kerala coordinates:</span>
-                <button type="button" class="bm-pill-btn" (click)="setPresetCoords(9.9312, 76.2673, 'Kochi')">
-                  Kochi (9.9312, 76.2673)
-                </button>
-                <button type="button" class="bm-pill-btn" (click)="setPresetCoords(11.2588, 75.7804, 'Kozhikode')">
-                  Kozhikode (11.2588, 75.7804)
-                </button>
-                <button type="button" class="bm-pill-btn" (click)="setPresetCoords(8.5241, 76.9366, 'Trivandrum')">
-                  Trivandrum (8.5241, 76.9366)
-                </button>
               </div>
 
               <div class="bm-form-actions">
@@ -370,6 +367,15 @@ export const BUSINESS_TYPES = [
                   Lat: {{ merchant()?.location?.latitude }} | Lng: {{ merchant()?.location?.longitude }}
                 </span>
               </div>
+              @if (merchant()?.location?.latitude && merchant()?.location?.longitude) {
+                <div class="bm-info-item bm-col-2" style="margin-top: 8px;">
+                  <bm-location-picker
+                    [latitude]="merchant()!.location.latitude"
+                    [longitude]="merchant()!.location.longitude"
+                    [readonly]="true"
+                  ></bm-location-picker>
+                </div>
+              }
             </div>
           </bm-card>
 
@@ -1040,6 +1046,15 @@ export class MyStoreComponent implements OnInit {
         this.isLoading.set(false);
       },
     });
+  }
+
+  onCoordinatesSelected(coords: GeoCoordinates): void {
+    this.createStoreForm.patchValue({
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+    });
+    this.createStoreForm.get('latitude')?.markAsDirty();
+    this.createStoreForm.get('longitude')?.markAsDirty();
   }
 
   setPresetCoords(lat: number, lng: number, city: string): void {

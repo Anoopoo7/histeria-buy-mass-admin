@@ -30,6 +30,7 @@ import { BadgeComponent } from '../../../../shared/ui/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { CardComponent } from '../../../../shared/ui/card/card.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
+import { LocationPickerComponent } from '../../../../shared/ui/location-picker/location-picker.component';
 
 @Component({
   selector: 'bm-admin-merchant-detail',
@@ -43,6 +44,7 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
     CardComponent,
     BadgeComponent,
     ButtonComponent,
+    LocationPickerComponent,
   ],
   template: `
     <div class="bm-admin-detail-page">
@@ -172,6 +174,13 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
                   <span class="bm-value bm-mono">
                     Lat: {{ app.location.latitude }}, Lng: {{ app.location.longitude }}
                   </span>
+                </div>
+                <div style="margin-top: 12px;">
+                  <bm-location-picker
+                    [latitude]="app.location.latitude"
+                    [longitude]="app.location.longitude"
+                    [readonly]="true"
+                  ></bm-location-picker>
                 </div>
               </div>
             </bm-card>
