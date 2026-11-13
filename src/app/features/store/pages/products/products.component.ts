@@ -1340,6 +1340,7 @@ import { SelectComponent } from '../../../../shared/ui/select/select.component';
       justify-content: center;
       padding: var(--bm-space-4);
       animation: fadeIn 0.15s ease-out;
+      overflow-y: auto;
     }
 
     .bm-modal-box {
@@ -1352,6 +1353,8 @@ import { SelectComponent } from '../../../../shared/ui/select/select.component';
       max-height: 90vh;
       overflow: hidden;
       border: 1px solid var(--bm-color-border);
+      margin: auto;
+      flex-shrink: 0;
     }
 
     .bm-product-modal {
@@ -1373,6 +1376,7 @@ import { SelectComponent } from '../../../../shared/ui/select/select.component';
       gap: var(--bm-space-3);
       padding: var(--bm-space-4);
       border-bottom: 1px solid var(--bm-color-border);
+      flex-shrink: 0;
     }
 
     .bm-modal-title-group {
@@ -1428,6 +1432,9 @@ import { SelectComponent } from '../../../../shared/ui/select/select.component';
     .bm-modal-body {
       padding: var(--bm-space-4);
       overflow-y: auto;
+      overscroll-behavior: contain;
+      flex: 1;
+      min-height: 0;
       display: flex;
       flex-direction: column;
       gap: var(--bm-space-4);
@@ -1514,6 +1521,7 @@ import { SelectComponent } from '../../../../shared/ui/select/select.component';
       padding: var(--bm-space-3) var(--bm-space-4);
       border-top: 1px solid var(--bm-color-border);
       background-color: var(--bm-color-surface-subtle);
+      flex-shrink: 0;
     }
 
     // Media Manager styles

@@ -20,6 +20,7 @@ export interface ProductRecord {
   sku?: string;
   images: ProductImage[];
   price: number;
+  regularRetailPrice?: number;
   unit: string;
   status: ProductStatus;
   createdAt: string | Date;
