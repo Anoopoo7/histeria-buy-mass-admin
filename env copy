@@ -1,0 +1,19 @@
+
+# BuyMass Store Admin — Local Environment Variables
+# Add your Google Maps JavaScript API key below to enable live maps & places autocomplete
+GOOGLE_MAPS_API_KEY=AIzaSyBVNqwyTxfqtIKJfMZnsmQqHDuY8l8VZyE
+
+# Backend REST API endpoint
+API_BASE_URL=https://histeria-buymass-dev.work.gd
+
+# Cloudinary Credentials (create unsigned preset in Cloudinary Dashboard -> Settings -> Upload)
+CLOUDINARY_CLOUD_NAME=djwecjdib
+CLOUDINARY_UPLOAD_PRESET=buy-mass-test
+CLOUDINARY_API_KEY=147291176635196
+
+# New Relic Browser Telemetry (Frontend Metrics, Core Web Vitals, Error Tracking)
+# Obtain from New Relic One: Add Data -> Browser Monitoring -> Copy/Paste Snippet or Application Settings
+NEW_RELIC_ACCOUNT_ID=8713206
+NEW_RELIC_APPLICATION_ID=NRBR-aca99326cf8b0e93628
+NEW_RELIC_LICENSE_KEY=
+NEW_RELIC_TRUST_KEY=

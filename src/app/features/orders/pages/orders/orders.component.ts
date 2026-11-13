@@ -39,6 +39,7 @@ import { CardComponent } from '../../../../shared/ui/card/card.component';
 import { EmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { OtpInputComponent } from '../../../../shared/ui/otp-input/otp-input.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
+import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.component';
 
 export type OrdersViewMode = 'ALL_ORDERS' | 'PICKUPS' | 'ADMIN';
 
@@ -51,6 +52,7 @@ export type OrdersViewMode = 'ALL_ORDERS' | 'PICKUPS' | 'ADMIN';
     FormsModule,
     LucideAngularModule,
     PageHeaderComponent,
+    SkeletonComponent,
     CardComponent,
     EmptyStateComponent,
     ButtonComponent,
@@ -244,9 +246,15 @@ export type OrdersViewMode = 'ALL_ORDERS' | 'PICKUPS' | 'ADMIN';
       <!-- Orders Content Card -->
       <bm-card>
         @if (isLoading()) {
-          <div class="bm-loading-state">
-            <lucide-icon [img]="RefreshIcon" [size]="28" class="bm-spin"></lucide-icon>
-            <p>Loading orders from group-buying pools...</p>
+          <div class="bm-skeleton-table-wrapper" aria-label="Loading orders">
+            <div class="bm-skeleton-table-header">
+              <bm-skeleton width="130px" height="14px"></bm-skeleton>
+              <bm-skeleton width="150px" height="14px"></bm-skeleton>
+              <bm-skeleton width="110px" height="14px"></bm-skeleton>
+              <bm-skeleton width="80px" height="14px"></bm-skeleton>
+              <bm-skeleton width="70px" height="14px"></bm-skeleton>
+            </div>
+            <bm-skeleton variant="table-row" [count]="6" [columns]="5"></bm-skeleton>
           </div>
         } @else if (filteredOrders().length === 0) {
           <bm-empty-state
@@ -1359,6 +1367,19 @@ export type OrdersViewMode = 'ALL_ORDERS' | 'PICKUPS' | 'ADMIN';
       padding: var(--bm-space-12) 0;
       color: var(--bm-color-text-muted);
       gap: var(--bm-space-3);
+    }
+
+    .bm-skeleton-table-wrapper {
+      padding: var(--bm-space-2);
+    }
+
+    .bm-skeleton-table-header {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background-color: var(--bm-color-surface-subtle, #f8fafc);
+      border-bottom: 1px solid var(--bm-color-border, #e2e8f0);
+      border-radius: var(--bm-radius-md, 8px) var(--bm-radius-md, 8px) 0 0;
     }
 
     .bm-form-error-alert {

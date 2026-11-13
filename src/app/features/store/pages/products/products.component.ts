@@ -47,6 +47,7 @@ import { EmptyStateComponent } from '../../../../shared/ui/empty-state/empty-sta
 import { InputComponent } from '../../../../shared/ui/input/input.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
 import { SelectComponent } from '../../../../shared/ui/select/select.component';
+import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.component';
 
 @Component({
   selector: 'bm-products',
@@ -58,6 +59,7 @@ import { SelectComponent } from '../../../../shared/ui/select/select.component';
     ReactiveFormsModule,
     LucideAngularModule,
     PageHeaderComponent,
+    SkeletonComponent,
     CardComponent,
     EmptyStateComponent,
     ButtonComponent,
@@ -204,9 +206,15 @@ import { SelectComponent } from '../../../../shared/ui/select/select.component';
       <!-- Main Products Card -->
       <bm-card>
         @if (isLoading()) {
-          <div class="bm-loading-box">
-            <lucide-icon [img]="RefreshIcon" [size]="24" class="bm-spin"></lucide-icon>
-            <span>Loading product catalogue...</span>
+          <div class="bm-skeleton-table-wrapper" aria-label="Loading products">
+            <div class="bm-skeleton-table-header">
+              <bm-skeleton width="140px" height="14px"></bm-skeleton>
+              <bm-skeleton width="100px" height="14px"></bm-skeleton>
+              <bm-skeleton width="90px" height="14px"></bm-skeleton>
+              <bm-skeleton width="80px" height="14px"></bm-skeleton>
+              <bm-skeleton width="60px" height="14px"></bm-skeleton>
+            </div>
+            <bm-skeleton variant="table-row" [count]="6" [columns]="6"></bm-skeleton>
           </div>
         } @else if (filteredProducts().length === 0) {
           <bm-empty-state
@@ -1063,6 +1071,19 @@ import { SelectComponent } from '../../../../shared/ui/select/select.component';
       padding: var(--bm-space-8);
       color: var(--bm-color-text-secondary);
       font-size: var(--bm-font-size-sm);
+    }
+
+    .bm-skeleton-table-wrapper {
+      padding: var(--bm-space-2);
+    }
+
+    .bm-skeleton-table-header {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background-color: var(--bm-color-surface-subtle, #f8fafc);
+      border-bottom: 1px solid var(--bm-color-border, #e2e8f0);
+      border-radius: var(--bm-radius-md, 8px) var(--bm-radius-md, 8px) 0 0;
     }
 
     .bm-spin {

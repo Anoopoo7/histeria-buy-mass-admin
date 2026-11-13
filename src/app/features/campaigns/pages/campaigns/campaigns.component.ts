@@ -58,6 +58,7 @@ import { EmptyStateComponent } from '../../../../shared/ui/empty-state/empty-sta
 import { InputComponent } from '../../../../shared/ui/input/input.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
 import { SelectComponent } from '../../../../shared/ui/select/select.component';
+import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.component';
 
 @Component({
   selector: 'bm-campaigns',
@@ -69,6 +70,7 @@ import { SelectComponent } from '../../../../shared/ui/select/select.component';
     ReactiveFormsModule,
     LucideAngularModule,
     PageHeaderComponent,
+    SkeletonComponent,
     CardComponent,
     EmptyStateComponent,
     ButtonComponent,
@@ -289,9 +291,8 @@ import { SelectComponent } from '../../../../shared/ui/select/select.component';
       <!-- Pools Data Display -->
       <bm-card>
         @if (isLoading()) {
-          <div class="bm-loading-state">
-            <lucide-icon [img]="RefreshIcon" [size]="28" class="bm-spin"></lucide-icon>
-            <p>Loading community group-buying pools...</p>
+          <div class="bm-skeleton-pools-wrap" aria-label="Loading group-buying pools">
+            <bm-skeleton variant="card" [count]="3" height="110px"></bm-skeleton>
           </div>
         } @else if (filteredPools().length === 0) {
           <bm-empty-state
@@ -1858,6 +1859,10 @@ import { SelectComponent } from '../../../../shared/ui/select/select.component';
       padding: var(--bm-space-12) 0;
       color: var(--bm-color-text-muted);
       gap: var(--bm-space-3);
+    }
+
+    .bm-skeleton-pools-wrap {
+      padding: var(--bm-space-4);
     }
 
     .bm-form-error-alert {

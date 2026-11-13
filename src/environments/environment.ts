@@ -9,10 +9,10 @@ export const environment = {
     apiKey: '147291176635196',
   },
   newRelic: {
-    accountId: '',
-    applicationId: '',
+    accountId: '8713206',
+    applicationId: 'NRBR-aca99326cf8b0e93628',
     licenseKey: '',
-    trustKey: '',
+    trustKey: '8713206',
     enabled: false,
   },
   appName: 'BuyMass Store Admin',
