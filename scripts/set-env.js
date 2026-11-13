@@ -8,6 +8,9 @@ const envExamplePath = path.join(rootDir, '.env.example');
 // Default fallback values
 let googleMapsApiKey = '';
 let apiBaseUrl = 'https://histeria-buymass-dev.work.gd';
+let cloudinaryCloudName = '';
+let cloudinaryUploadPreset = '';
+let cloudinaryApiKey = '';
 
 // Create .env from template if missing
 if (!fs.existsSync(envPath)) {
@@ -17,19 +20,27 @@ GOOGLE_MAPS_API_KEY=
 
 # Backend REST API endpoint
 API_BASE_URL=https://histeria-buymass-dev.work.gd
+
+# Cloudinary Media Upload (Direct browser uploads for store photographs & KYC documents)
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_UPLOAD_PRESET=
+CLOUDINARY_API_KEY=
 `;
   fs.writeFileSync(envPath, defaultEnvContent, 'utf8');
   console.log('[set-env] Created default .env file in project root');
 }
 
 // Always ensure .env.example exists
-if (!fs.existsSync(envExamplePath)) {
-  const exampleContent = `# BuyMass Store Admin — Environment Template
+const exampleContent = `# BuyMass Store Admin — Environment Template
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 API_BASE_URL=https://histeria-buymass-dev.work.gd
+
+# Cloudinary Credentials (create unsigned preset in Cloudinary Dashboard -> Settings -> Upload)
+CLOUDINARY_CLOUD_NAME=your_cloud_name_here
+CLOUDINARY_UPLOAD_PRESET=your_unsigned_upload_preset
+CLOUDINARY_API_KEY=your_api_key_here
 `;
-  fs.writeFileSync(envExamplePath, exampleContent, 'utf8');
-}
+fs.writeFileSync(envExamplePath, exampleContent, 'utf8');
 
 // Parse .env
 if (fs.existsSync(envPath)) {
@@ -49,6 +60,15 @@ if (fs.existsSync(envPath)) {
         if (key === 'API_BASE_URL' || key === 'BACKEND_URL') {
           apiBaseUrl = val;
         }
+        if (key === 'CLOUDINARY_CLOUD_NAME') {
+          cloudinaryCloudName = val;
+        }
+        if (key === 'CLOUDINARY_UPLOAD_PRESET') {
+          cloudinaryUploadPreset = val;
+        }
+        if (key === 'CLOUDINARY_API_KEY') {
+          cloudinaryApiKey = val;
+        }
       }
     }
   });
@@ -60,6 +80,11 @@ export const environment = {
   production: false,
   apiBaseUrl: '${apiBaseUrl}',
   googleMapsApiKey: '${googleMapsApiKey}',
+  cloudinary: {
+    cloudName: '${cloudinaryCloudName}',
+    uploadPreset: '${cloudinaryUploadPreset}',
+    apiKey: '${cloudinaryApiKey}',
+  },
   appName: 'BuyMass Store Admin',
   enableMockAnalytics: true,
 };
@@ -71,6 +96,11 @@ export const environment = {
   production: true,
   apiBaseUrl: '${apiBaseUrl}',
   googleMapsApiKey: '${googleMapsApiKey}',
+  cloudinary: {
+    cloudName: '${cloudinaryCloudName}',
+    uploadPreset: '${cloudinaryUploadPreset}',
+    apiKey: '${cloudinaryApiKey}',
+  },
   appName: 'BuyMass Store Admin',
   enableMockAnalytics: false,
 };
@@ -84,4 +114,4 @@ if (!fs.existsSync(envDir)) {
 fs.writeFileSync(path.join(envDir, 'environment.ts'), envTsContent, 'utf8');
 fs.writeFileSync(path.join(envDir, 'environment.prod.ts'), envProdTsContent, 'utf8');
 
-console.log(`[set-env] Synchronized environment configs from .env (Google Maps Key: ${googleMapsApiKey ? 'Configured' : 'Not set'})`);
+console.log(`[set-env] Synchronized environment configs from .env (Cloudinary: ${cloudinaryCloudName ? 'Configured' : 'Not set'})`);

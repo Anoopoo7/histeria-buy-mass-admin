@@ -2,6 +2,7 @@ import { HttpErrorResponse, HttpEvent, HttpHandlerFn, HttpInterceptorFn, HttpReq
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, catchError, filter, switchMap, take, throwError } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 import { AuthResponse } from '../../models/auth.model';
 import { TokenStorageService } from '../../services/token-storage.service';
 import { AuthService } from '../services/auth.service';
@@ -28,13 +29,16 @@ export const authInterceptor: HttpInterceptorFn = (
   const authService = inject(AuthService);
   const router = inject(Router);
 
+  // Check if request is targeted to our backend API
+  const isBackendUrl = req.url.startsWith('/') || req.url.startsWith(environment.apiBaseUrl);
+
   // Check if request matches bypass list
   const isBypassUrl = BYPASS_PATHS.some((path) => req.url.includes(path));
 
   let authReq = req;
   const token = tokenStorage.getAccessToken();
 
-  if (token && !isBypassUrl && !req.headers.has('Authorization')) {
+  if (isBackendUrl && token && !isBypassUrl && !req.headers.has('Authorization')) {
     authReq = req.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`,
@@ -44,7 +48,7 @@ export const authInterceptor: HttpInterceptorFn = (
 
   return next(authReq).pipe(
     catchError((error: unknown) => {
-      if (error instanceof HttpErrorResponse && error.status === 401) {
+      if (isBackendUrl && error instanceof HttpErrorResponse && error.status === 401) {
         // If 401 happened during refresh or on a bypass endpoint, don't attempt refresh loop
         if (isBypassUrl || req.url.includes('/api/v1/auth/refresh')) {
           tokenStorage.clearTokens();
@@ -54,7 +58,7 @@ export const authInterceptor: HttpInterceptorFn = (
         return handle401Error(authReq, next, tokenStorage, authService, router);
       }
 
-      // Any other error (including 403 Forbidden) is passed through without refresh
+      // Any other error (including 403 Forbidden or third-party error) is passed through without refresh
       return throwError(() => error);
     }),
   );

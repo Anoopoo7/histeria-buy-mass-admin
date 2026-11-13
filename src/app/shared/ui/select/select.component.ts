@@ -2,9 +2,11 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   ElementRef,
+  EventEmitter,
   HostListener,
   Input,
   OnChanges,
+  Output,
   SimpleChanges,
   ViewChild,
   computed,
@@ -496,6 +498,12 @@ export class SelectComponent implements ControlValueAccessor, OnChanges {
     this.rawOptions.set(value || []);
   }
 
+  @Input() set value(val: any) {
+    this.writeValue(val);
+  }
+
+  @Output() readonly valueChange = new EventEmitter<any>();
+
   @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
   @ViewChild('triggerBtn') triggerBtn?: ElementRef<HTMLButtonElement>;
 
@@ -613,6 +621,7 @@ export class SelectComponent implements ControlValueAccessor, OnChanges {
     if (opt.disabled) return;
     this.selectedValue.set(opt.value);
     this.onChange(opt.value);
+    this.valueChange.emit(opt.value);
     this.close();
     this.triggerBtn?.nativeElement.focus();
   }
@@ -622,6 +631,7 @@ export class SelectComponent implements ControlValueAccessor, OnChanges {
     if (this.disabled) return;
     this.selectedValue.set(null);
     this.onChange(null);
+    this.valueChange.emit(null);
     this.onTouched();
   }
 

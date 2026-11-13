@@ -3,6 +3,11 @@ export const environment = {
   production: true,
   apiBaseUrl: 'https://histeria-buymass-dev.work.gd',
   googleMapsApiKey: 'AIzaSyBVNqwyTxfqtIKJfMZnsmQqHDuY8l8VZyE',
+  cloudinary: {
+    cloudName: 'djwecjdib',
+    uploadPreset: 'buy-mass-test',
+    apiKey: '147291176635196',
+  },
   appName: 'BuyMass Store Admin',
   enableMockAnalytics: false,
 };

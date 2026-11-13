@@ -8,6 +8,7 @@ import {
   Camera,
   CheckCircle2,
   Clock,
+  CloudUpload,
   ExternalLink,
   FileCheck2,
   FileText,
@@ -34,6 +35,7 @@ import {
   UpdateMerchantRequest,
 } from '../../../../core/models/merchant.model';
 import { ApiError } from '../../../../core/services/api-client.service';
+import { CloudinaryService } from '../../../../core/services/cloudinary.service';
 import { MerchantService } from '../../../../core/services/merchant.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { BadgeComponent } from '../../../../shared/ui/badge/badge.component';
@@ -428,38 +430,145 @@ export const BUSINESS_TYPES = [
             title="Store Photographs"
             [subtitle]="'Uploaded: ' + (merchant()?.photos?.length || 0) + ' / 10 (Minimum 3 required for review submission)'"
           >
-            <!-- Photo Upload Row (if editable) -->
+            <!-- Photo Upload Area (if editable) -->
             @if (merchant()?.status === 'DRAFT' || merchant()?.status === 'REJECTED') {
-              <form [formGroup]="photoForm" (ngSubmit)="onAddPhoto()" class="bm-inline-upload-form">
-                <div class="bm-upload-input-wrap">
-                  <div class="bm-upload-url-input">
-                    <input
-                      type="url"
-                      formControlName="url"
-                      placeholder="Enter image URL (e.g. https://images.unsplash.com/...)"
-                      class="bm-text-input"
-                    />
-                  </div>
-                  <div class="bm-upload-select-wrap">
-                    <bm-select
-                      formControlName="category"
-                      [options]="photoCategoryOptions"
-                      placeholder="Select category"
-                      [searchable]="false"
-                    ></bm-select>
-                  </div>
+              <div class="bm-upload-panel">
+                <div class="bm-upload-mode-nav">
+                  <button
+                    type="button"
+                    class="bm-mode-btn"
+                    [class.bm-mode-active]="photoUploadMode() === 'FILE'"
+                    (click)="photoUploadMode.set('FILE')"
+                  >
+                    <lucide-icon [img]="CloudUploadIcon" [size]="14"></lucide-icon>
+                    <span>Upload File (Cloudinary)</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="bm-mode-btn"
+                    [class.bm-mode-active]="photoUploadMode() === 'URL'"
+                    (click)="photoUploadMode.set('URL')"
+                  >
+                    <lucide-icon [img]="ExternalLinkIcon" [size]="14"></lucide-icon>
+                    <span>Direct Image URL</span>
+                  </button>
                 </div>
-                <bm-button
-                  type="submit"
-                  variant="secondary"
-                  size="md"
-                  [loading]="isUploadingPhoto()"
-                  [disabled]="photoForm.invalid || isUploadingPhoto()"
-                >
-                  <lucide-icon [img]="PlusIcon" [size]="16" bmLeading></lucide-icon>
-                  <span>Add Photo</span>
-                </bm-button>
-              </form>
+
+                @if (photoUploadMode() === 'FILE') {
+                  @if (!cloudinaryService.isConfigured()) {
+                    <div class="bm-cloudinary-notice">
+                      <lucide-icon [img]="AlertCircleIcon" [size]="16" class="bm-notice-icon"></lucide-icon>
+                      <div class="bm-notice-text">
+                        <strong>Cloudinary credentials not set in <code>.env</code>.</strong>
+                        <span>Add <code>CLOUDINARY_CLOUD_NAME</code> and <code>CLOUDINARY_UPLOAD_PRESET</code> to your <code>.env</code> file. You can still switch to <strong>Direct Image URL</strong> to add photos.</span>
+                      </div>
+                    </div>
+                  }
+
+                  @if (!selectedPhotoFile()) {
+                    <div
+                      class="bm-dropzone"
+                      [class.bm-drag-active]="photoDragActive()"
+                      (dragover)="onPhotoDragOver($event)"
+                      (dragleave)="photoDragActive.set(false)"
+                      (drop)="onPhotoDrop($event)"
+                      (click)="photoFileInput.click()"
+                    >
+                      <input
+                        #photoFileInput
+                        type="file"
+                        accept="image/*"
+                        style="display: none;"
+                        (change)="onPhotoFileSelected($event)"
+                      />
+                      <div class="bm-dropzone-icon-box">
+                        <lucide-icon [img]="CloudUploadIcon" [size]="28"></lucide-icon>
+                      </div>
+                      <div class="bm-dropzone-text">
+                        <span class="bm-dropzone-title">Click to choose photo or drag & drop</span>
+                        <span class="bm-dropzone-subtitle">JPEG, PNG, or WebP up to 10MB</span>
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="bm-selected-file-card">
+                      <div class="bm-file-thumb">
+                        @if (photoPreviewUrl()) {
+                          <img [src]="photoPreviewUrl()" alt="Store photo preview" class="bm-thumb-img" />
+                        } @else {
+                          <lucide-icon [img]="ImageIcon" [size]="24"></lucide-icon>
+                        }
+                      </div>
+                      <div class="bm-file-details">
+                        <span class="bm-file-name" [title]="selectedPhotoFile()?.name">{{ selectedPhotoFile()?.name }}</span>
+                        <span class="bm-file-size">{{ formatBytes(selectedPhotoFile()?.size || 0) }}</span>
+                      </div>
+                      <div class="bm-file-select-wrap">
+                        <bm-select
+                          [options]="photoCategoryOptions"
+                          [value]="selectedPhotoCategory()"
+                          (valueChange)="onPhotoCategoryChanged($event)"
+                          placeholder="Select category"
+                          [searchable]="false"
+                        ></bm-select>
+                      </div>
+                      <div class="bm-file-actions">
+                        <bm-button
+                          type="button"
+                          variant="primary"
+                          size="sm"
+                          [loading]="isUploadingPhoto()"
+                          [disabled]="isUploadingPhoto()"
+                          (btnClick)="onUploadPhotoFile()"
+                        >
+                          <lucide-icon [img]="CloudUploadIcon" [size]="14" bmLeading></lucide-icon>
+                          <span>Upload & Save</span>
+                        </bm-button>
+                        <bm-button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          [disabled]="isUploadingPhoto()"
+                          (btnClick)="clearSelectedPhoto()"
+                        >
+                          <lucide-icon [img]="XIcon" [size]="14" bmLeading></lucide-icon>
+                          <span>Cancel</span>
+                        </bm-button>
+                      </div>
+                    </div>
+                  }
+                } @else {
+                  <form [formGroup]="photoForm" (ngSubmit)="onAddPhoto()" class="bm-inline-upload-form">
+                    <div class="bm-upload-input-wrap">
+                      <div class="bm-upload-url-input">
+                        <input
+                          type="url"
+                          formControlName="url"
+                          placeholder="Enter image URL (e.g. https://res.cloudinary.com/... or https://images.unsplash.com/...)"
+                          class="bm-text-input"
+                        />
+                      </div>
+                      <div class="bm-upload-select-wrap">
+                        <bm-select
+                          formControlName="category"
+                          [options]="photoCategoryOptions"
+                          placeholder="Select category"
+                          [searchable]="false"
+                        ></bm-select>
+                      </div>
+                    </div>
+                    <bm-button
+                      type="submit"
+                      variant="secondary"
+                      size="md"
+                      [loading]="isUploadingPhoto()"
+                      [disabled]="photoForm.invalid || isUploadingPhoto()"
+                    >
+                      <lucide-icon [img]="PlusIcon" [size]="16" bmLeading></lucide-icon>
+                      <span>Add Photo</span>
+                    </bm-button>
+                  </form>
+                }
+              </div>
             }
 
             <!-- Photo Gallery Grid -->
@@ -499,36 +608,139 @@ export const BUSINESS_TYPES = [
           <!-- Section 3: Business Documents (GST, PAN, Trade License) -->
           <bm-card title="Business KYC & Licensing Documents">
             @if (merchant()?.status === 'DRAFT' || merchant()?.status === 'REJECTED') {
-              <form [formGroup]="docForm" (ngSubmit)="onAddDocument()" class="bm-inline-upload-form">
-                <div class="bm-upload-input-wrap">
-                  <div class="bm-upload-url-input">
-                    <input
-                      type="url"
-                      formControlName="url"
-                      placeholder="Enter document PDF or image URL"
-                      class="bm-text-input"
-                    />
-                  </div>
-                  <div class="bm-upload-select-wrap">
-                    <bm-select
-                      formControlName="type"
-                      [options]="docTypeOptions"
-                      placeholder="Select document type"
-                      [searchable]="false"
-                    ></bm-select>
-                  </div>
+              <div class="bm-upload-panel">
+                <div class="bm-upload-mode-nav">
+                  <button
+                    type="button"
+                    class="bm-mode-btn"
+                    [class.bm-mode-active]="docUploadMode() === 'FILE'"
+                    (click)="docUploadMode.set('FILE')"
+                  >
+                    <lucide-icon [img]="CloudUploadIcon" [size]="14"></lucide-icon>
+                    <span>Upload Document File (Cloudinary)</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="bm-mode-btn"
+                    [class.bm-mode-active]="docUploadMode() === 'URL'"
+                    (click)="docUploadMode.set('URL')"
+                  >
+                    <lucide-icon [img]="ExternalLinkIcon" [size]="14"></lucide-icon>
+                    <span>Direct Document URL</span>
+                  </button>
                 </div>
-                <bm-button
-                  type="submit"
-                  variant="secondary"
-                  size="md"
-                  [loading]="isUploadingDoc()"
-                  [disabled]="docForm.invalid || isUploadingDoc()"
-                >
-                  <lucide-icon [img]="PlusIcon" [size]="16" bmLeading></lucide-icon>
-                  <span>Attach Document</span>
-                </bm-button>
-              </form>
+
+                @if (docUploadMode() === 'FILE') {
+                  @if (!cloudinaryService.isConfigured()) {
+                    <div class="bm-cloudinary-notice">
+                      <lucide-icon [img]="AlertCircleIcon" [size]="16" class="bm-notice-icon"></lucide-icon>
+                      <div class="bm-notice-text">
+                        <strong>Cloudinary credentials not set in <code>.env</code>.</strong>
+                        <span>Add <code>CLOUDINARY_CLOUD_NAME</code> and <code>CLOUDINARY_UPLOAD_PRESET</code> to your <code>.env</code> file. You can still switch to <strong>Direct Document URL</strong> to attach documents.</span>
+                      </div>
+                    </div>
+                  }
+
+                  @if (!selectedDocFile()) {
+                    <div
+                      class="bm-dropzone"
+                      [class.bm-drag-active]="docDragActive()"
+                      (dragover)="onDocDragOver($event)"
+                      (dragleave)="docDragActive.set(false)"
+                      (drop)="onDocDrop($event)"
+                      (click)="docFileInput.click()"
+                    >
+                      <input
+                        #docFileInput
+                        type="file"
+                        accept=".pdf,image/*"
+                        style="display: none;"
+                        (change)="onDocFileSelected($event)"
+                      />
+                      <div class="bm-dropzone-icon-box">
+                        <lucide-icon [img]="CloudUploadIcon" [size]="28"></lucide-icon>
+                      </div>
+                      <div class="bm-dropzone-text">
+                        <span class="bm-dropzone-title">Click to choose document or drag & drop</span>
+                        <span class="bm-dropzone-subtitle">PDF, JPEG, PNG, or WebP up to 15MB</span>
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="bm-selected-file-card">
+                      <div class="bm-file-thumb bm-doc-thumb">
+                        <lucide-icon [img]="FileTextIcon" [size]="24"></lucide-icon>
+                      </div>
+                      <div class="bm-file-details">
+                        <span class="bm-file-name" [title]="selectedDocFile()?.name">{{ selectedDocFile()?.name }}</span>
+                        <span class="bm-file-size">{{ formatBytes(selectedDocFile()?.size || 0) }}</span>
+                      </div>
+                      <div class="bm-file-select-wrap">
+                        <bm-select
+                          [options]="docTypeOptions"
+                          [value]="selectedDocType()"
+                          (valueChange)="onDocTypeChanged($event)"
+                          placeholder="Select document type"
+                          [searchable]="false"
+                        ></bm-select>
+                      </div>
+                      <div class="bm-file-actions">
+                        <bm-button
+                          type="button"
+                          variant="primary"
+                          size="sm"
+                          [loading]="isUploadingDoc()"
+                          [disabled]="isUploadingDoc()"
+                          (btnClick)="onUploadDocFile()"
+                        >
+                          <lucide-icon [img]="CloudUploadIcon" [size]="14" bmLeading></lucide-icon>
+                          <span>Upload & Attach</span>
+                        </bm-button>
+                        <bm-button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          [disabled]="isUploadingDoc()"
+                          (btnClick)="clearSelectedDoc()"
+                        >
+                          <lucide-icon [img]="XIcon" [size]="14" bmLeading></lucide-icon>
+                          <span>Cancel</span>
+                        </bm-button>
+                      </div>
+                    </div>
+                  }
+                } @else {
+                  <form [formGroup]="docForm" (ngSubmit)="onAddDocument()" class="bm-inline-upload-form">
+                    <div class="bm-upload-input-wrap">
+                      <div class="bm-upload-url-input">
+                        <input
+                          type="url"
+                          formControlName="url"
+                          placeholder="Enter document PDF or image URL"
+                          class="bm-text-input"
+                        />
+                      </div>
+                      <div class="bm-upload-select-wrap">
+                        <bm-select
+                          formControlName="type"
+                          [options]="docTypeOptions"
+                          placeholder="Select document type"
+                          [searchable]="false"
+                        ></bm-select>
+                      </div>
+                    </div>
+                    <bm-button
+                      type="submit"
+                      variant="secondary"
+                      size="md"
+                      [loading]="isUploadingDoc()"
+                      [disabled]="docForm.invalid || isUploadingDoc()"
+                    >
+                      <lucide-icon [img]="PlusIcon" [size]="16" bmLeading></lucide-icon>
+                      <span>Attach Document</span>
+                    </bm-button>
+                  </form>
+                }
+              </div>
             }
 
             @if (merchant()?.documents && merchant()!.documents.length > 0) {
@@ -1017,6 +1229,206 @@ export const BUSINESS_TYPES = [
       width: fit-content;
     }
 
+    // Upload panel and mode navigation
+    .bm-upload-panel {
+      margin-bottom: var(--bm-space-4);
+      padding-bottom: var(--bm-space-4);
+      border-bottom: 1px solid var(--bm-color-border);
+    }
+
+    .bm-upload-mode-nav {
+      display: inline-flex;
+      background-color: var(--bm-color-surface-subtle);
+      padding: 3px;
+      border-radius: var(--bm-radius-md);
+      gap: 3px;
+      margin-bottom: var(--bm-space-3);
+      border: 1px solid var(--bm-color-border);
+    }
+
+    .bm-mode-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: none;
+      background: transparent;
+      border-radius: var(--bm-radius-sm);
+      font-size: var(--bm-font-size-xs);
+      font-weight: var(--bm-font-weight-medium);
+      color: var(--bm-color-text-secondary);
+      cursor: pointer;
+      transition: all var(--bm-transition-fast);
+
+      &:hover {
+        color: var(--bm-color-text-primary);
+      }
+
+      &.bm-mode-active {
+        background-color: var(--bm-color-surface);
+        color: var(--bm-color-primary);
+        font-weight: var(--bm-font-weight-semibold);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      }
+    }
+
+    .bm-cloudinary-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--bm-space-2);
+      padding: var(--bm-space-3);
+      background-color: #FEF3C7;
+      border: 1px solid rgba(217, 119, 6, 0.25);
+      border-radius: var(--bm-radius-md);
+      font-size: var(--bm-font-size-xs);
+      color: #92400E;
+      margin-bottom: var(--bm-space-3);
+
+      code {
+        font-family: var(--bm-font-mono);
+        background-color: rgba(0, 0, 0, 0.06);
+        padding: 1px 4px;
+        border-radius: 3px;
+      }
+    }
+
+    .bm-notice-icon {
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    // Dropzone
+    .bm-dropzone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: var(--bm-space-6) var(--bm-space-4);
+      border: 1.5px dashed var(--bm-color-border);
+      border-radius: var(--bm-radius-lg);
+      background-color: var(--bm-color-surface-subtle);
+      cursor: pointer;
+      text-align: center;
+      transition: border-color var(--bm-transition-fast), background-color var(--bm-transition-fast);
+
+      &:hover {
+        border-color: var(--bm-color-primary);
+        background-color: #F4F9F6;
+      }
+
+      &.bm-drag-active {
+        border-color: var(--bm-color-primary);
+        background-color: #E8F3ED;
+      }
+    }
+
+    .bm-dropzone-icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--bm-radius-full);
+      background-color: #E8F3ED;
+      color: var(--bm-color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bm-dropzone-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .bm-dropzone-title {
+      font-size: var(--bm-font-size-sm);
+      font-weight: var(--bm-font-weight-medium);
+      color: var(--bm-color-text-primary);
+    }
+
+    .bm-dropzone-subtitle {
+      font-size: var(--bm-font-size-xs);
+      color: var(--bm-color-text-muted);
+    }
+
+    // Selected file card
+    .bm-selected-file-card {
+      display: flex;
+      flex-direction: column;
+      gap: var(--bm-space-3);
+      padding: var(--bm-space-3);
+      border: 1px solid var(--bm-color-border);
+      border-radius: var(--bm-radius-md);
+      background-color: var(--bm-color-surface);
+
+      @media (min-width: 768px) {
+        flex-direction: row;
+        align-items: center;
+      }
+    }
+
+    .bm-file-thumb {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--bm-radius-sm);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--bm-color-surface-subtle);
+      flex-shrink: 0;
+      border: 1px solid var(--bm-color-border);
+    }
+
+    .bm-thumb-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .bm-doc-thumb {
+      background-color: #E8F3ED;
+      color: var(--bm-color-primary);
+    }
+
+    .bm-file-details {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .bm-file-name {
+      font-size: var(--bm-font-size-sm);
+      font-weight: var(--bm-font-weight-medium);
+      color: var(--bm-color-text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bm-file-size {
+      font-size: var(--bm-font-size-xs);
+      color: var(--bm-color-text-muted);
+    }
+
+    .bm-file-select-wrap {
+      width: 100%;
+
+      @media (min-width: 768px) {
+        width: 240px;
+        flex-shrink: 0;
+      }
+    }
+
+    .bm-file-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--bm-space-2);
+      flex-shrink: 0;
+    }
+
     // Inline upload form
     .bm-inline-upload-form {
       display: flex;
@@ -1405,6 +1817,7 @@ export class MyStoreComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   readonly merchantService = inject(MerchantService);
   readonly authService = inject(AuthService);
+  readonly cloudinaryService = inject(CloudinaryService);
   private readonly toast = inject(ToastService);
 
   readonly StoreIcon = Store;
@@ -1422,6 +1835,20 @@ export class MyStoreComponent implements OnInit, OnDestroy {
   readonly ShieldCheckIcon = ShieldCheck;
   readonly LockIcon = Lock;
   readonly XIcon = X;
+  readonly CloudUploadIcon = CloudUpload;
+  readonly FileTextIcon = FileText;
+  readonly ImageIcon = ImageIcon;
+
+  readonly photoUploadMode = signal<'FILE' | 'URL'>('FILE');
+  readonly selectedPhotoFile = signal<File | null>(null);
+  readonly photoPreviewUrl = signal<string | null>(null);
+  readonly selectedPhotoCategory = signal<PhotoCategory>('EXTERIOR');
+  readonly photoDragActive = signal<boolean>(false);
+
+  readonly docUploadMode = signal<'FILE' | 'URL'>('FILE');
+  readonly selectedDocFile = signal<File | null>(null);
+  readonly selectedDocType = signal<BusinessDocumentType>('GST_CERTIFICATE');
+  readonly docDragActive = signal<boolean>(false);
 
   readonly showPhoneModal = signal<boolean>(false);
   readonly phoneModalStep = signal<'PHONE' | 'OTP'>('PHONE');
@@ -1684,6 +2111,169 @@ export class MyStoreComponent implements OnInit, OnDestroy {
         if (err.status === 403 || (err.message && err.message.toLowerCase().includes('phone'))) {
           this.openPhoneVerificationModal();
         }
+      },
+    });
+  }
+
+  formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  onPhotoDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.photoDragActive.set(true);
+  }
+
+  onPhotoDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.photoDragActive.set(false);
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      this.handlePhotoFile(files[0]);
+    }
+  }
+
+  onPhotoFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.handlePhotoFile(input.files[0]);
+    }
+  }
+
+  private handlePhotoFile(file: File): void {
+    if (!file.type.startsWith('image/')) {
+      this.toast.danger('Please select a valid image file (JPG, PNG, WebP).');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      this.toast.danger('Photo size exceeds 10MB limit.');
+      return;
+    }
+    this.selectedPhotoFile.set(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.photoPreviewUrl.set(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  clearSelectedPhoto(): void {
+    this.selectedPhotoFile.set(null);
+    this.photoPreviewUrl.set(null);
+  }
+
+  onPhotoCategoryChanged(cat: any): void {
+    if (cat) {
+      this.selectedPhotoCategory.set(cat as PhotoCategory);
+    }
+  }
+
+  onDocTypeChanged(type: any): void {
+    if (type) {
+      this.selectedDocType.set(type as BusinessDocumentType);
+    }
+  }
+
+  onUploadPhotoFile(): void {
+    const file = this.selectedPhotoFile();
+    if (!file || this.isUploadingPhoto()) return;
+
+    this.isUploadingPhoto.set(true);
+    this.cloudinaryService.uploadImage(file).subscribe({
+      next: (res) => {
+        this.merchantService
+          .uploadPhotos([{ url: res.url, category: this.selectedPhotoCategory() }])
+          .subscribe({
+            next: (updated) => {
+              this.merchant.set(updated);
+              this.clearSelectedPhoto();
+              this.isUploadingPhoto.set(false);
+              this.toast.success('Store photograph uploaded and saved successfully!');
+            },
+            error: (err: ApiError) => {
+              this.isUploadingPhoto.set(false);
+              this.toast.danger(err.message || 'Failed to save uploaded photo to store.');
+            },
+          });
+      },
+      error: (err: Error) => {
+        this.isUploadingPhoto.set(false);
+        this.toast.danger(err.message || 'Cloudinary photo upload failed.');
+      },
+    });
+  }
+
+  onDocDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.docDragActive.set(true);
+  }
+
+  onDocDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.docDragActive.set(false);
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      this.handleDocFile(files[0]);
+    }
+  }
+
+  onDocFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.handleDocFile(input.files[0]);
+    }
+  }
+
+  private handleDocFile(file: File): void {
+    const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type) && !file.type.startsWith('image/')) {
+      this.toast.danger('Please select a PDF or image file (PDF, JPG, PNG).');
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      this.toast.danger('Document size exceeds 15MB limit.');
+      return;
+    }
+    this.selectedDocFile.set(file);
+  }
+
+  clearSelectedDoc(): void {
+    this.selectedDocFile.set(null);
+  }
+
+  onUploadDocFile(): void {
+    const file = this.selectedDocFile();
+    if (!file || this.isUploadingDoc()) return;
+
+    this.isUploadingDoc.set(true);
+    this.cloudinaryService.uploadDocument(file).subscribe({
+      next: (res) => {
+        this.merchantService
+          .uploadDocument({ url: res.url, type: this.selectedDocType() })
+          .subscribe({
+            next: (updated) => {
+              this.merchant.set(updated);
+              this.clearSelectedDoc();
+              this.isUploadingDoc.set(false);
+              this.toast.success('Business document uploaded and attached successfully!');
+            },
+            error: (err: ApiError) => {
+              this.isUploadingDoc.set(false);
+              this.toast.danger(err.message || 'Failed to attach uploaded document.');
+            },
+          });
+      },
+      error: (err: Error) => {
+        this.isUploadingDoc.set(false);
+        this.toast.danger(err.message || 'Cloudinary document upload failed.');
       },
     });
   }

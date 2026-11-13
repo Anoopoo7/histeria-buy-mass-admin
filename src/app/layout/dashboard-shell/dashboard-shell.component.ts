@@ -88,14 +88,6 @@ import { DropdownComponent } from '../../shared/ui/dropdown/dropdown.component';
             >
               <lucide-icon [img]="StoreIcon" [size]="18"></lucide-icon>
               <span>My Store</span>
-              @if (authService.currentMerchant()?.status) {
-                <bm-badge
-                  [variant]="authService.currentMerchant()?.status === 'APPROVED' ? 'success' : 'warning'"
-                  size="sm"
-                >
-                  {{ authService.currentMerchant()?.status }}
-                </bm-badge>
-              }
             </a>
             <a
               routerLink="/store/products"
