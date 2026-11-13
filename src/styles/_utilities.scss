@@ -1,0 +1,31 @@
+// Utility Classes
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.text-primary { color: var(--bm-color-text-primary); }
+.text-secondary { color: var(--bm-color-text-secondary); }
+.text-muted { color: var(--bm-color-text-muted); }
+.text-success { color: var(--bm-color-success); }
+.text-warning { color: var(--bm-color-warning); }
+.text-danger { color: var(--bm-color-danger); }
+
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-1 { gap: var(--bm-space-1); }
+.gap-2 { gap: var(--bm-space-2); }
+.gap-3 { gap: var(--bm-space-3); }
+.gap-4 { gap: var(--bm-space-4); }
+.gap-6 { gap: var(--bm-space-6); }
+
+.w-full { width: 100%; }

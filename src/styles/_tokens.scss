@@ -1,0 +1,68 @@
+// BuyMass Design System Tokens
+:root {
+  // Brand Primary (Deep forest green palette)
+  --bm-color-primary: #176B50;
+  --bm-color-primary-hover: #12563F;
+  --bm-color-primary-soft: #E8F3ED;
+  --bm-color-primary-border: #99CEBC;
+  --bm-color-primary-focus: rgba(23, 107, 80, 0.15);
+
+  // Neutral Palette
+  --bm-color-bg: #F8F9F7;
+  --bm-color-surface: #FFFFFF;
+  --bm-color-surface-subtle: #F1F5F2;
+  --bm-color-text-primary: #1E293B;
+  --bm-color-text-secondary: #64748B;
+  --bm-color-text-muted: #94A3B8;
+  --bm-color-border: #E5E7EB;
+  --bm-color-border-hover: #CBD5E1;
+
+  // Semantic Palette
+  --bm-color-success: #15803D;
+  --bm-color-success-bg: #DCFCE7;
+  --bm-color-success-border: #BBF7D0;
+
+  --bm-color-warning: #D97706;
+  --bm-color-warning-bg: #FEF3C7;
+  --bm-color-warning-border: #FDE68A;
+
+  --bm-color-danger: #DC2626;
+  --bm-color-danger-bg: #FEE2E2;
+  --bm-color-danger-border: #FECACA;
+
+  --bm-color-info: #2563EB;
+  --bm-color-info-bg: #DBEAFE;
+  --bm-color-info-border: #BFDBFE;
+
+  // Spacing & Sizing
+  --bm-space-1: 0.25rem;  // 4px
+  --bm-space-2: 0.5rem;   // 8px
+  --bm-space-3: 0.75rem;  // 12px
+  --bm-space-4: 1rem;     // 16px
+  --bm-space-5: 1.25rem;  // 20px
+  --bm-space-6: 1.5rem;   // 24px
+  --bm-space-8: 2rem;     // 32px
+  --bm-space-10: 2.5rem;  // 40px
+  --bm-space-12: 3rem;    // 48px
+
+  // Border Radius (Restrained, subtle)
+  --bm-radius-sm: 4px;
+  --bm-radius-md: 6px;
+  --bm-radius-lg: 8px;
+  --bm-radius-xl: 12px;
+  --bm-radius-full: 9999px;
+
+  // Shadows (Minimal, crisp)
+  --bm-shadow-xs: 0 1px 2px 0 rgba(16, 24, 40, 0.04);
+  --bm-shadow-sm: 0 1px 3px 0 rgba(16, 24, 40, 0.08), 0 1px 2px -1px rgba(16, 24, 40, 0.06);
+  --bm-shadow-md: 0 4px 6px -1px rgba(16, 24, 40, 0.08), 0 2px 4px -2px rgba(16, 24, 40, 0.04);
+  --bm-shadow-lg: 0 10px 15px -3px rgba(16, 24, 40, 0.08), 0 4px 6px -4px rgba(16, 24, 40, 0.03);
+
+  // Transitions
+  --bm-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --bm-transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  // Dimensions
+  --bm-sidebar-width: 260px;
+  --bm-header-height: 60px;
+}

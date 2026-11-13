@@ -1,0 +1,62 @@
+@use 'styles/tokens';
+@use 'styles/typography';
+@use 'styles/mixins';
+@use 'styles/utilities';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--bm-font-family);
+  font-size: var(--bm-font-size-base);
+  color: var(--bm-color-text-primary);
+  background-color: var(--bm-color-bg);
+  line-height: var(--bm-line-height-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+a {
+  color: var(--bm-color-primary);
+  text-decoration: none;
+  transition: color var(--bm-transition-fast);
+
+  &:hover {
+    color: var(--bm-color-primary-hover);
+    text-decoration: underline;
+  }
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bm-color-border);
+  border-radius: var(--bm-radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bm-color-text-muted);
+}

@@ -1,0 +1,74 @@
+// Typography System
+:root {
+  --bm-font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Geist', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --bm-font-mono: 'JetBrains Mono', 'Fira Code', Menlo, Monaco, Consolas, monospace;
+
+  --bm-font-size-xs: 0.75rem;    // 12px
+  --bm-font-size-sm: 0.8125rem;  // 13px
+  --bm-font-size-base: 0.875rem; // 14px
+  --bm-font-size-md: 1rem;       // 16px
+  --bm-font-size-lg: 1.125rem;   // 18px
+  --bm-font-size-xl: 1.25rem;    // 20px
+  --bm-font-size-2xl: 1.5rem;    // 24px
+
+  --bm-font-weight-regular: 400;
+  --bm-font-weight-medium: 500;
+  --bm-font-weight-semibold: 600;
+  --bm-font-weight-bold: 700;
+
+  --bm-line-height-tight: 1.25;
+  --bm-line-height-normal: 1.5;
+  --bm-line-height-relaxed: 1.625;
+}
+
+// Typography Mixins
+@mixin text-page-heading {
+  font-size: var(--bm-font-size-2xl);
+  font-weight: var(--bm-font-weight-semibold);
+  line-height: var(--bm-line-height-tight);
+  color: var(--bm-color-text-primary);
+  letter-spacing: -0.02em;
+}
+
+@mixin text-section-heading {
+  font-size: var(--bm-font-size-lg);
+  font-weight: var(--bm-font-weight-semibold);
+  line-height: var(--bm-line-height-tight);
+  color: var(--bm-color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+@mixin text-card-heading {
+  font-size: var(--bm-font-size-md);
+  font-weight: var(--bm-font-weight-medium);
+  line-height: var(--bm-line-height-tight);
+  color: var(--bm-color-text-primary);
+}
+
+@mixin text-body {
+  font-size: var(--bm-font-size-base);
+  font-weight: var(--bm-font-weight-regular);
+  line-height: var(--bm-line-height-normal);
+  color: var(--bm-color-text-primary);
+}
+
+@mixin text-secondary {
+  font-size: var(--bm-font-size-sm);
+  font-weight: var(--bm-font-weight-regular);
+  line-height: var(--bm-line-height-normal);
+  color: var(--bm-color-text-secondary);
+}
+
+@mixin text-label {
+  font-size: var(--bm-font-size-sm);
+  font-weight: var(--bm-font-weight-medium);
+  line-height: var(--bm-line-height-tight);
+  color: var(--bm-color-text-primary);
+}
+
+@mixin text-caption {
+  font-size: var(--bm-font-size-xs);
+  font-weight: var(--bm-font-weight-regular);
+  line-height: var(--bm-line-height-normal);
+  color: var(--bm-color-text-muted);
+}
