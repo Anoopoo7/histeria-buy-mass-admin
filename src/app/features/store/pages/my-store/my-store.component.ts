@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import {
   AlertCircle,
@@ -14,6 +14,7 @@ import {
   Image as ImageIcon,
   LucideAngularModule,
   MapPin,
+  Phone,
   Plus,
   RefreshCw,
   Send,
@@ -21,6 +22,7 @@ import {
   Store,
   Trash2,
   Upload,
+  X,
 } from 'lucide-angular';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import {
@@ -75,6 +77,7 @@ export const BUSINESS_TYPES = [
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     ReactiveFormsModule,
     RouterModule,
     LucideAngularModule,
@@ -138,7 +141,45 @@ export const BUSINESS_TYPES = [
 
           @if (errorMessage()) {
             <div class="bm-alert-banner bm-alert-danger" role="alert">
-              <span>{{ errorMessage() }}</span>
+              <div class="bm-alert-content">
+                <lucide-icon [img]="AlertCircleIcon" [size]="18" class="bm-alert-icon"></lucide-icon>
+                <div class="bm-alert-text">
+                  <span class="bm-alert-title">{{ isPhoneError() ? 'Phone Verification Required' : 'Application Submission Error' }}</span>
+                  <span class="bm-alert-desc">{{ errorMessage() }}</span>
+                </div>
+              </div>
+              @if (isPhoneError()) {
+                <bm-button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  (btnClick)="openPhoneVerificationModal()"
+                >
+                  <lucide-icon [img]="ShieldCheckIcon" [size]="14" bmLeading></lucide-icon>
+                  <span>Verify Phone Number</span>
+                </bm-button>
+              }
+            </div>
+          } @else if (!authService.currentUser()?.isPhoneVerified) {
+            <div class="bm-alert-banner bm-alert-warning" role="status">
+              <div class="bm-alert-content">
+                <lucide-icon [img]="PhoneIcon" [size]="18" class="bm-alert-icon text-warning"></lucide-icon>
+                <div class="bm-alert-text">
+                  <span class="bm-alert-title">WhatsApp Phone Verification Required</span>
+                  <span class="bm-alert-desc">
+                    Your phone number must be verified via WhatsApp OTP before creating your merchant store.
+                  </span>
+                </div>
+              </div>
+              <bm-button
+                type="button"
+                variant="outline"
+                size="sm"
+                (btnClick)="openPhoneVerificationModal()"
+              >
+                <lucide-icon [img]="ShieldCheckIcon" [size]="14" bmLeading></lucide-icon>
+                <span>Verify Phone</span>
+              </bm-button>
             </div>
           }
 
@@ -513,6 +554,132 @@ export const BUSINESS_TYPES = [
           </bm-card>
         </div>
       }
+
+      <!-- In-Context Phone Verification Modal -->
+      @if (showPhoneModal()) {
+        <div class="bm-modal-backdrop" (click)="closePhoneModal()">
+          <div class="bm-modal-box" (click)="$event.stopPropagation()">
+            <div class="bm-modal-header">
+              <div class="bm-modal-title-group">
+                <div class="bm-modal-icon-badge">
+                  <lucide-icon [img]="PhoneIcon" [size]="20"></lucide-icon>
+                </div>
+                <div>
+                  <h3 class="bm-modal-title">Verify WhatsApp Phone Number</h3>
+                  <p class="bm-modal-subtitle">Required to create your store and release customer pickup OTPs</p>
+                </div>
+              </div>
+              <button type="button" class="bm-modal-close-btn" (click)="closePhoneModal()" aria-label="Close dialog">
+                <lucide-icon [img]="XIcon" [size]="18"></lucide-icon>
+              </button>
+            </div>
+
+            <div class="bm-modal-body">
+              @if (phoneModalStep() === 'PHONE') {
+                <div class="bm-phone-step">
+                  <p class="bm-step-desc">
+                    Confirm your WhatsApp phone number below. We will send an instant 6-digit verification code to authenticate your merchant account.
+                  </p>
+
+                  <bm-input
+                    id="verify-modal-phone"
+                    label="WhatsApp Phone Number"
+                    placeholder="e.g. +91 98765 43210"
+                    [required]="true"
+                    [(ngModel)]="verificationPhone"
+                    hint="Include country code (e.g. +919876543210)"
+                    [error]="phoneSendError()"
+                  ></bm-input>
+
+                  <div class="bm-modal-actions">
+                    <bm-button
+                      type="button"
+                      variant="outline"
+                      size="md"
+                      (btnClick)="closePhoneModal()"
+                    >
+                      <span>Cancel</span>
+                    </bm-button>
+
+                    <bm-button
+                      type="button"
+                      variant="primary"
+                      size="md"
+                      [loading]="isSendingOtp()"
+                      [disabled]="!verificationPhone || isSendingOtp()"
+                      (btnClick)="sendVerificationOtp()"
+                    >
+                      <lucide-icon [img]="SendIcon" [size]="16" bmLeading></lucide-icon>
+                      <span>Send WhatsApp OTP</span>
+                    </bm-button>
+                  </div>
+                </div>
+              } @else {
+                <div class="bm-otp-step">
+                  <div class="bm-otp-sent-info">
+                    <lucide-icon [img]="CheckCircleIcon" [size]="16" class="text-success"></lucide-icon>
+                    <span>6-digit OTP sent to <strong>{{ verificationPhone }}</strong></span>
+                    <button type="button" class="bm-change-phone-btn" (click)="changePhone()">Edit</button>
+                  </div>
+
+                  @if (phoneVerifyError()) {
+                    <div class="bm-alert-banner bm-alert-danger" role="alert" style="margin-bottom: 12px;">
+                      <span>{{ phoneVerifyError() }}</span>
+                    </div>
+                  }
+
+                  <bm-input
+                    id="verify-modal-otp"
+                    label="Enter 6-Digit WhatsApp OTP"
+                    placeholder="123456"
+                    [required]="true"
+                    [(ngModel)]="verificationOtp"
+                    hint="Enter the code sent to your WhatsApp by BuyMass"
+                  ></bm-input>
+
+                  <div class="bm-resend-row">
+                    @if (resendCooldown() > 0) {
+                      <span class="bm-cooldown-text">Resend code in {{ resendCooldown() }}s</span>
+                    } @else {
+                      <button
+                        type="button"
+                        class="bm-resend-btn"
+                        [disabled]="isSendingOtp()"
+                        (click)="sendVerificationOtp()"
+                      >
+                        Resend WhatsApp OTP
+                      </button>
+                    }
+                  </div>
+
+                  <div class="bm-modal-actions">
+                    <bm-button
+                      type="button"
+                      variant="outline"
+                      size="md"
+                      (btnClick)="changePhone()"
+                    >
+                      <span>Back</span>
+                    </bm-button>
+
+                    <bm-button
+                      type="button"
+                      variant="primary"
+                      size="md"
+                      [loading]="isVerifyingOtp()"
+                      [disabled]="!verificationOtp || verificationOtp.length < 6 || isVerifyingOtp()"
+                      (btnClick)="verifyOtpAndSubmitStore()"
+                    >
+                      <lucide-icon [img]="ShieldCheckIcon" [size]="16" bmLeading></lucide-icon>
+                      <span>Verify & Submit Store</span>
+                    </bm-button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -585,6 +752,11 @@ export const BUSINESS_TYPES = [
     }
 
     .bm-alert-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--bm-space-3);
       padding: var(--bm-space-3) var(--bm-space-4);
       border-radius: var(--bm-radius-md);
       font-size: var(--bm-font-size-xs);
@@ -594,6 +766,41 @@ export const BUSINESS_TYPES = [
         color: var(--bm-color-danger);
         border: 1px solid var(--bm-color-danger-border);
       }
+
+      &.bm-alert-warning {
+        background-color: #FEF3C7;
+        color: #92400E;
+        border: 1px solid #FDE68A;
+      }
+    }
+
+    .bm-alert-content {
+      display: flex;
+      align-items: center;
+      gap: var(--bm-space-3);
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .bm-alert-icon {
+      flex-shrink: 0;
+    }
+
+    .bm-alert-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .bm-alert-title {
+      font-weight: var(--bm-font-weight-semibold);
+      font-size: var(--bm-font-size-xs);
+    }
+
+    .bm-alert-desc {
+      margin: 0;
+      font-size: 11px;
+      line-height: 1.4;
     }
 
     .bm-store-form {
@@ -954,9 +1161,168 @@ export const BUSINESS_TYPES = [
       color: var(--bm-color-text-secondary);
       margin: 0;
     }
+
+    // Phone Verification Modal
+    .bm-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: var(--bm-space-4);
+      animation: fadeIn 150ms ease-out;
+    }
+
+    .bm-modal-box {
+      width: 100%;
+      max-width: 460px;
+      background-color: var(--bm-color-surface);
+      border-radius: var(--bm-radius-lg);
+      border: 1px solid var(--bm-color-border);
+      box-shadow: var(--bm-shadow-lg);
+      padding: var(--bm-space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--bm-space-4);
+      animation: modalSlideUp 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .bm-modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--bm-space-3);
+      padding-bottom: var(--bm-space-3);
+      border-bottom: 1px solid var(--bm-color-border);
+    }
+
+    .bm-modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: var(--bm-space-3);
+    }
+
+    .bm-modal-icon-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--bm-radius-md);
+      background-color: var(--bm-color-primary-soft);
+      color: var(--bm-color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .bm-modal-title {
+      font-size: var(--bm-font-size-base);
+      font-weight: var(--bm-font-weight-semibold);
+      color: var(--bm-color-text-primary);
+      margin: 0;
+    }
+
+    .bm-modal-subtitle {
+      font-size: var(--bm-font-size-xs);
+      color: var(--bm-color-text-secondary);
+      margin: 2px 0 0 0;
+    }
+
+    .bm-modal-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--bm-color-text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: var(--bm-radius-sm);
+
+      &:hover {
+        background-color: var(--bm-color-surface-subtle);
+        color: var(--bm-color-text-primary);
+      }
+    }
+
+    .bm-step-desc {
+      font-size: var(--bm-font-size-xs);
+      color: var(--bm-color-text-secondary);
+      line-height: 1.5;
+      margin: 0 0 var(--bm-space-3) 0;
+    }
+
+    .bm-otp-sent-info {
+      display: flex;
+      align-items: center;
+      gap: var(--bm-space-2);
+      padding: var(--bm-space-3);
+      background-color: var(--bm-color-surface-subtle);
+      border-radius: var(--bm-radius-md);
+      font-size: var(--bm-font-size-xs);
+      color: var(--bm-color-text-primary);
+      margin-bottom: var(--bm-space-3);
+    }
+
+    .bm-change-phone-btn {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--bm-color-primary);
+      font-size: 11px;
+      font-weight: var(--bm-font-weight-medium);
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .bm-resend-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    .bm-cooldown-text {
+      font-size: 11px;
+      color: var(--bm-color-text-muted);
+    }
+
+    .bm-resend-btn {
+      background: none;
+      border: none;
+      color: var(--bm-color-primary);
+      font-size: 11px;
+      font-weight: var(--bm-font-weight-medium);
+      cursor: pointer;
+      padding: 0;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    .bm-modal-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--bm-space-3);
+      margin-top: var(--bm-space-4);
+      padding-top: var(--bm-space-4);
+      border-top: 1px solid var(--bm-color-border);
+    }
   `],
 })
-export class MyStoreComponent implements OnInit {
+export class MyStoreComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   readonly merchantService = inject(MerchantService);
   readonly authService = inject(AuthService);
@@ -973,6 +1339,26 @@ export class MyStoreComponent implements OnInit {
   readonly CameraIcon = Camera;
   readonly FileCheckIcon = FileCheck2;
   readonly ExternalLinkIcon = ExternalLink;
+  readonly PhoneIcon = Phone;
+  readonly ShieldCheckIcon = ShieldCheck;
+  readonly XIcon = X;
+
+  readonly showPhoneModal = signal<boolean>(false);
+  readonly phoneModalStep = signal<'PHONE' | 'OTP'>('PHONE');
+  readonly isSendingOtp = signal<boolean>(false);
+  readonly isVerifyingOtp = signal<boolean>(false);
+  readonly phoneSendError = signal<string | null>(null);
+  readonly phoneVerifyError = signal<string | null>(null);
+  readonly resendCooldown = signal<number>(0);
+
+  verificationPhone: string = '';
+  verificationOtp: string = '';
+  private cooldownInterval: any = null;
+
+  readonly isPhoneError = computed(() => {
+    const msg = (this.errorMessage() || '').toLowerCase();
+    return msg.includes('phone') || msg.includes('verification');
+  });
 
   readonly keralaDistricts = KERALA_DISTRICTS;
   readonly businessTypes = BUSINESS_TYPES;
@@ -1074,9 +1460,116 @@ export class MyStoreComponent implements OnInit {
     return null;
   }
 
+  openPhoneVerificationModal(): void {
+    const userPhone = this.authService.currentUser()?.phone || '';
+    this.verificationPhone = userPhone;
+    this.verificationOtp = '';
+    this.phoneSendError.set(null);
+    this.phoneVerifyError.set(null);
+    this.phoneModalStep.set('PHONE');
+    this.showPhoneModal.set(true);
+  }
+
+  closePhoneModal(): void {
+    this.showPhoneModal.set(false);
+    if (this.cooldownInterval) {
+      clearInterval(this.cooldownInterval);
+      this.resendCooldown.set(0);
+    }
+  }
+
+  changePhone(): void {
+    this.phoneModalStep.set('PHONE');
+    this.verificationOtp = '';
+    this.phoneVerifyError.set(null);
+    if (this.cooldownInterval) {
+      clearInterval(this.cooldownInterval);
+      this.resendCooldown.set(0);
+    }
+  }
+
+  sendVerificationOtp(): void {
+    const phone = this.verificationPhone.trim();
+    if (!phone) {
+      this.phoneSendError.set('Please enter a valid WhatsApp phone number.');
+      return;
+    }
+
+    this.isSendingOtp.set(true);
+    this.phoneSendError.set(null);
+
+    this.authService.sendPhoneOtp(phone).subscribe({
+      next: () => {
+        this.isSendingOtp.set(false);
+        this.phoneModalStep.set('OTP');
+        this.startCooldown();
+        this.toast.success('6-digit WhatsApp OTP sent successfully!');
+      },
+      error: (err: ApiError) => {
+        this.isSendingOtp.set(false);
+        this.phoneSendError.set(err.message || 'Failed to send WhatsApp verification code. Please try again.');
+      },
+    });
+  }
+
+  verifyOtpAndSubmitStore(): void {
+    const phone = this.verificationPhone.trim();
+    const otp = this.verificationOtp.trim();
+
+    if (!otp || otp.length < 6) {
+      this.phoneVerifyError.set('Please enter the 6-digit OTP received via WhatsApp.');
+      return;
+    }
+
+    this.isVerifyingOtp.set(true);
+    this.phoneVerifyError.set(null);
+
+    this.authService.verifyPhone(phone, otp).subscribe({
+      next: () => {
+        this.isVerifyingOtp.set(false);
+        this.closePhoneModal();
+        this.errorMessage.set(null);
+        this.toast.success('Phone verified successfully! Submitting your store application...');
+
+        // Resumes and submits store creation flow with existing form values
+        this.onCreateStore();
+      },
+      error: (err: ApiError) => {
+        this.isVerifyingOtp.set(false);
+        this.phoneVerifyError.set(err.message || 'Invalid or expired OTP. Please try again.');
+      },
+    });
+  }
+
+  private startCooldown(): void {
+    this.resendCooldown.set(60);
+    if (this.cooldownInterval) clearInterval(this.cooldownInterval);
+    this.cooldownInterval = setInterval(() => {
+      const current = this.resendCooldown();
+      if (current <= 1) {
+        clearInterval(this.cooldownInterval);
+        this.resendCooldown.set(0);
+      } else {
+        this.resendCooldown.set(current - 1);
+      }
+    }, 1000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.cooldownInterval) {
+      clearInterval(this.cooldownInterval);
+    }
+  }
+
   onCreateStore(): void {
     if (this.createStoreForm.invalid || this.isCreatingStore()) {
       this.createStoreForm.markAllAsTouched();
+      return;
+    }
+
+    if (!this.authService.currentUser()?.isPhoneVerified) {
+      this.errorMessage.set('Phone verification is required before initiating merchant onboarding.');
+      this.openPhoneVerificationModal();
       return;
     }
 
@@ -1108,6 +1601,9 @@ export class MyStoreComponent implements OnInit {
       error: (err: ApiError) => {
         this.isCreatingStore.set(false);
         this.errorMessage.set(err.message || 'Unable to create store application.');
+        if (err.status === 403 || (err.message && err.message.toLowerCase().includes('phone'))) {
+          this.openPhoneVerificationModal();
+        }
       },
     });
   }
