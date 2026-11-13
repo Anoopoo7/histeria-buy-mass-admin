@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { adminGuard } from './core/guards/admin.guard';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
 import { AuthLayoutComponent } from './layout/auth-layout/auth-layout.component';
 import { DashboardShellComponent } from './layout/dashboard-shell/dashboard-shell.component';
@@ -52,6 +53,11 @@ export const routes: Routes = [
           import('./features/dashboard/pages/dashboard/dashboard.component').then((m) => m.DashboardPageComponent),
       },
       {
+        path: 'store/overview',
+        loadComponent: () =>
+          import('./features/store/pages/my-store/my-store.component').then((m) => m.MyStoreComponent),
+      },
+      {
         path: 'merchant/status',
         loadComponent: () =>
           import('./features/merchants/pages/merchant-status/merchant-status.component').then(
@@ -93,6 +99,25 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/orders/pages/orders/orders.component').then((m) => m.OrdersPageComponent),
       },
+
+      // Dedicated Admin Store Review Portal (AdminGuard protected)
+      {
+        path: 'admin/merchants',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/admin/pages/merchants-list/merchants-list.component').then(
+            (m) => m.AdminMerchantsListComponent,
+          ),
+      },
+      {
+        path: 'admin/merchants/:id',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/admin/pages/merchant-detail/merchant-detail.component').then(
+            (m) => m.AdminMerchantDetailComponent,
+          ),
+      },
+
       {
         path: '',
         redirectTo: 'dashboard',

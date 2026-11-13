@@ -11,6 +11,7 @@ import {
   Menu,
   QrCode,
   Settings,
+  ShieldCheck,
   ShoppingBag,
   Store,
   User,
@@ -80,7 +81,7 @@ import { DropdownComponent } from '../../shared/ui/dropdown/dropdown.component';
           <div class="bm-nav-group">
             <span class="bm-nav-group-title">Store Management</span>
             <a
-              routerLink="/merchant/status"
+              routerLink="/store/overview"
               routerLinkActive="active"
               (click)="closeMobileMenu()"
               class="bm-nav-item"
@@ -115,6 +116,22 @@ import { DropdownComponent } from '../../shared/ui/dropdown/dropdown.component';
               <span>Inventory</span>
             </a>
           </div>
+
+          <!-- Admin Portal (Only visible to ADMIN role) -->
+          @if (isAdmin()) {
+            <div class="bm-nav-group bm-admin-nav-group">
+              <span class="bm-nav-group-title">Platform Administration</span>
+              <a
+                routerLink="/admin/merchants"
+                routerLinkActive="active"
+                (click)="closeMobileMenu()"
+                class="bm-nav-item"
+              >
+                <lucide-icon [img]="ShieldCheckIcon" [size]="18"></lucide-icon>
+                <span>Store Applications</span>
+              </a>
+            </div>
+          }
 
           <!-- Group Buying Section -->
           <div class="bm-nav-group">
@@ -628,9 +645,11 @@ export class DashboardShellComponent {
   readonly MenuIcon = Menu;
   readonly CloseIcon = X;
   readonly ChevronDownIcon = ChevronDown;
+  readonly ShieldCheckIcon = ShieldCheck;
 
   readonly isMobileMenuOpen = signal<boolean>(false);
 
+  readonly isAdmin = computed(() => this.authService.userRole() === 'ADMIN');
   readonly userName = computed(() => this.authService.currentUser()?.name || 'Merchant User');
   readonly userEmail = computed(() => this.authService.currentUser()?.email || '');
   readonly userRoleLabel = computed(() => {
