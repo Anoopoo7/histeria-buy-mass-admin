@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, catchError, filter, switchMap, take, throwError } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { AuthResponse } from '../../models/auth.model';
+import { NewRelicService } from '../../services/new-relic.service';
 import { TokenStorageService } from '../../services/token-storage.service';
 import { AuthService } from '../services/auth.service';
 
@@ -28,6 +29,7 @@ export const authInterceptor: HttpInterceptorFn = (
   const tokenStorage = inject(TokenStorageService);
   const authService = inject(AuthService);
   const router = inject(Router);
+  const newRelic = inject(NewRelicService);
 
   // Check if request is targeted to our backend API
   const isBackendUrl = req.url.startsWith('/') || req.url.startsWith(environment.apiBaseUrl);
@@ -48,17 +50,29 @@ export const authInterceptor: HttpInterceptorFn = (
 
   return next(authReq).pipe(
     catchError((error: unknown) => {
-      if (isBackendUrl && error instanceof HttpErrorResponse && error.status === 401) {
-        // If 401 happened during refresh or on a bypass endpoint, don't attempt refresh loop
-        if (isBypassUrl || req.url.includes('/api/v1/auth/refresh')) {
-          tokenStorage.clearTokens();
-          return throwError(() => error);
+      if (isBackendUrl && error instanceof HttpErrorResponse) {
+        if (error.status === 401) {
+          // If 401 happened during refresh or on a bypass endpoint, don't attempt refresh loop
+          if (isBypassUrl || req.url.includes('/api/v1/auth/refresh')) {
+            tokenStorage.clearTokens();
+            return throwError(() => error);
+          }
+
+          return handle401Error(authReq, next, tokenStorage, authService, router);
         }
 
-        return handle401Error(authReq, next, tokenStorage, authService, router);
+        // Record 4xx/5xx API failures to New Relic
+        if (error.status >= 400) {
+          newRelic.noticeError(`HTTP ${error.status}: ${req.method} ${req.url}`, {
+            status: error.status,
+            method: req.method,
+            url: req.url,
+            message: error.message,
+          });
+        }
       }
 
-      // Any other error (including 403 Forbidden or third-party error) is passed through without refresh
+      // Any other error is passed through without refresh
       return throwError(() => error);
     }),
   );

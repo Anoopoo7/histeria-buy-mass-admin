@@ -31,6 +31,7 @@ import {
 } from '../../../../core/models/order.model';
 import { ApiError } from '../../../../core/services/api-client.service';
 import { OrderService } from '../../../../core/services/order.service';
+import { LoggerService } from '../../../../core/services/logger.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { BadgeComponent } from '../../../../shared/ui/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
@@ -1375,6 +1376,7 @@ export type OrdersViewMode = 'ALL_ORDERS' | 'PICKUPS' | 'ADMIN';
 })
 export class OrdersPageComponent implements OnInit {
   private readonly orderService = inject(OrderService);
+  private readonly logger = inject(LoggerService);
   readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
@@ -1608,9 +1610,14 @@ export class OrdersPageComponent implements OnInit {
   onConfirmOrder(order: OrderRecord): void {
     this.orderService.updateOrderStatus(order.id, 'CONFIRMED').subscribe({
       next: () => {
+        this.logger.trackOrder('CONFIRMED', order.id, {
+          orderNumber: order.orderNumber,
+          finalAmount: order.finalAmount,
+        });
         this.loadOrders();
       },
       error: (err: ApiError) => {
+        this.logger.error('Failed to confirm order', err, { orderId: order.id, orderNumber: order.orderNumber });
         this.toast.danger(err.message || 'Failed to confirm order.');
       },
     });
@@ -1619,9 +1626,13 @@ export class OrdersPageComponent implements OnInit {
   onMarkReadyForPickup(order: OrderRecord): void {
     this.orderService.markOrderReadyForPickup(order.id).subscribe({
       next: () => {
+        this.logger.trackOrder('READY_FOR_PICKUP', order.id, {
+          orderNumber: order.orderNumber,
+        });
         this.loadOrders();
       },
       error: (err: ApiError) => {
+        this.logger.error('Failed to mark order ready for pickup', err, { orderId: order.id, orderNumber: order.orderNumber });
         this.toast.danger(err.message || 'Failed to mark ready for pickup.');
       },
     });
@@ -1665,6 +1676,10 @@ export class OrdersPageComponent implements OnInit {
       next: () => {
         this.isVerifying.set(false);
         this.closeVerifyOtpModal();
+        this.logger.trackOrder('PICKUP_VERIFIED', order.id, {
+          orderNumber: order.orderNumber,
+          finalAmount: order.finalAmount,
+        });
         if (this.selectedOrderDetails()?.id === order.id) {
           this.selectedOrderDetails.set(null);
         }
@@ -1672,7 +1687,17 @@ export class OrdersPageComponent implements OnInit {
       },
       error: (err: ApiError) => {
         this.isVerifying.set(false);
-        this.verifyError.set(err.message || 'Invalid verification OTP. Please try again.');
+        const errMsg = err.message || 'Invalid verification OTP. Please try again.';
+        this.verifyError.set(errMsg);
+        this.logger.warn('Store pickup OTP verification attempt failed', {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          error: errMsg,
+        });
+        this.logger.trackOrder('PICKUP_OTP_FAILED', order.id, {
+          orderNumber: order.orderNumber,
+          reason: errMsg,
+        });
       },
     });
   }

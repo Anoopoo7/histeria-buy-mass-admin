@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ApiError } from '../../../../core/services/api-client.service';
+import { LoggerService } from '../../../../core/services/logger.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { InputComponent } from '../../../../shared/ui/input/input.component';
@@ -188,6 +189,7 @@ export class LoginPageComponent {
   readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly logger = inject(LoggerService);
 
   readonly errorMessage = signal<string | null>(null);
 
@@ -231,10 +233,20 @@ export class LoginPageComponent {
       })
       .subscribe({
         next: (response) => {
+          this.logger.trackAuth('LOGIN_SUCCESS', {
+            userId: response.user.id,
+            email: response.user.email,
+            role: response.user.role,
+          });
           this.toast.success(`Welcome back, ${response.user.name}`);
           this.router.navigate(['/dashboard']);
         },
         error: (err: ApiError) => {
+          this.logger.trackAuth('LOGIN_FAILED', {
+            identifier: formValue.identifier.trim(),
+            status: err.status,
+            message: err.message,
+          });
           if (err.code === 'EMAIL_VERIFICATION_REQUIRED') {
             this.errorMessage.set(
               'Your email has not been activated. Please check your inbox for the verification link.',

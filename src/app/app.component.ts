@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { NewRelicService } from './core/services/new-relic.service';
 import { ToastContainerComponent } from './shared/ui/toast/toast.component';
 
 @Component({
@@ -9,6 +10,11 @@ import { ToastContainerComponent } from './shared/ui/toast/toast.component';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   title = 'BuyMass Store Admin';
+  private readonly newRelic = inject(NewRelicService);
+
+  ngOnInit(): void {
+    this.newRelic.initRouteTracking();
+  }
 }
