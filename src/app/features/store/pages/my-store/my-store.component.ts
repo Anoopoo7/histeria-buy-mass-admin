@@ -39,6 +39,7 @@ import { CardComponent } from '../../../../shared/ui/card/card.component';
 import { EmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { InputComponent } from '../../../../shared/ui/input/input.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
+import { SelectComponent } from '../../../../shared/ui/select/select.component';
 
 export const KERALA_DISTRICTS = [
   'Alappuzha',
@@ -81,6 +82,7 @@ export const BUSINESS_TYPES = [
     BadgeComponent,
     ButtonComponent,
     InputComponent,
+    SelectComponent,
     EmptyStateComponent,
   ],
   template: `
@@ -152,14 +154,15 @@ export const BUSINESS_TYPES = [
                 ></bm-input>
 
                 <!-- Business Type -->
-                <div class="bm-select-group">
-                  <label for="store-btype" class="bm-field-label">Business Category *</label>
-                  <select id="store-btype" formControlName="businessType" class="bm-select">
-                    @for (bType of businessTypes; track bType) {
-                      <option [value]="bType">{{ bType }}</option>
-                    }
-                  </select>
-                </div>
+                <bm-select
+                  id="store-btype"
+                  label="Business Category"
+                  [required]="true"
+                  [options]="businessTypes"
+                  placeholder="Select business category"
+                  formControlName="businessType"
+                  [error]="getCreateError('businessType')"
+                ></bm-select>
 
                 <!-- Description -->
                 <div class="bm-full-col">
@@ -202,14 +205,15 @@ export const BUSINESS_TYPES = [
                 ></bm-input>
 
                 <!-- District -->
-                <div class="bm-select-group">
-                  <label for="store-district" class="bm-field-label">Kerala District *</label>
-                  <select id="store-district" formControlName="district" class="bm-select">
-                    @for (dist of keralaDistricts; track dist) {
-                      <option [value]="dist">{{ dist }}</option>
-                    }
-                  </select>
-                </div>
+                <bm-select
+                  id="store-district"
+                  label="Kerala District"
+                  [required]="true"
+                  [options]="keralaDistricts"
+                  placeholder="Select Kerala district"
+                  formControlName="district"
+                  [error]="getCreateError('district')"
+                ></bm-select>
 
                 <!-- Postal PIN Code -->
                 <bm-input
@@ -378,18 +382,22 @@ export const BUSINESS_TYPES = [
             @if (merchant()?.status === 'DRAFT' || merchant()?.status === 'REJECTED') {
               <form [formGroup]="photoForm" (ngSubmit)="onAddPhoto()" class="bm-inline-upload-form">
                 <div class="bm-upload-input-wrap">
-                  <input
-                    type="url"
-                    formControlName="url"
-                    placeholder="Enter image URL (e.g. https://images.unsplash.com/...)"
-                    class="bm-text-input"
-                  />
-                  <select formControlName="category" class="bm-select-sm">
-                    <option value="EXTERIOR">Exterior View</option>
-                    <option value="INTERIOR">Interior View</option>
-                    <option value="DISPLAY_AREA">Product Display</option>
-                    <option value="OTHER">Other</option>
-                  </select>
+                  <div class="bm-upload-url-input">
+                    <input
+                      type="url"
+                      formControlName="url"
+                      placeholder="Enter image URL (e.g. https://images.unsplash.com/...)"
+                      class="bm-text-input"
+                    />
+                  </div>
+                  <div class="bm-upload-select-wrap">
+                    <bm-select
+                      formControlName="category"
+                      [options]="photoCategoryOptions"
+                      placeholder="Select category"
+                      [searchable]="false"
+                    ></bm-select>
+                  </div>
                 </div>
                 <bm-button
                   type="submit"
@@ -443,18 +451,22 @@ export const BUSINESS_TYPES = [
             @if (merchant()?.status === 'DRAFT' || merchant()?.status === 'REJECTED') {
               <form [formGroup]="docForm" (ngSubmit)="onAddDocument()" class="bm-inline-upload-form">
                 <div class="bm-upload-input-wrap">
-                  <input
-                    type="url"
-                    formControlName="url"
-                    placeholder="Enter document PDF or image URL"
-                    class="bm-text-input"
-                  />
-                  <select formControlName="type" class="bm-select-sm">
-                    <option value="GST_CERTIFICATE">GST Certificate</option>
-                    <option value="PAN_CARD">PAN Card</option>
-                    <option value="TRADE_LICENSE">Trade License / Panchayath Permit</option>
-                    <option value="OTHER">Other Business Proof</option>
-                  </select>
+                  <div class="bm-upload-url-input">
+                    <input
+                      type="url"
+                      formControlName="url"
+                      placeholder="Enter document PDF or image URL"
+                      class="bm-text-input"
+                    />
+                  </div>
+                  <div class="bm-upload-select-wrap">
+                    <bm-select
+                      formControlName="type"
+                      [options]="docTypeOptions"
+                      placeholder="Select document type"
+                      [searchable]="false"
+                    ></bm-select>
+                  </div>
                 </div>
                 <bm-button
                   type="submit"
@@ -502,6 +514,9 @@ export const BUSINESS_TYPES = [
       display: flex;
       flex-direction: column;
       gap: var(--bm-space-6);
+      width: 100%;
+      max-width: 1080px;
+      margin: 0 auto;
     }
 
     .bm-loading-box {
@@ -523,7 +538,8 @@ export const BUSINESS_TYPES = [
       display: flex;
       flex-direction: column;
       gap: var(--bm-space-6);
-      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
     }
 
     .bm-create-hero {
@@ -785,9 +801,9 @@ export const BUSINESS_TYPES = [
       padding-bottom: var(--bm-space-4);
       border-bottom: 1px solid var(--bm-color-border);
 
-      @media (min-width: 640px) {
+      @media (min-width: 768px) {
         flex-direction: row;
-        align-items: center;
+        align-items: flex-start;
       }
     }
 
@@ -795,35 +811,44 @@ export const BUSINESS_TYPES = [
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: var(--bm-space-2);
+      gap: var(--bm-space-3);
 
       @media (min-width: 640px) {
         flex-direction: row;
+        align-items: flex-start;
+      }
+    }
+
+    .bm-upload-url-input {
+      flex: 1;
+      width: 100%;
+    }
+
+    .bm-upload-select-wrap {
+      width: 100%;
+
+      @media (min-width: 640px) {
+        width: 250px;
+        flex-shrink: 0;
       }
     }
 
     .bm-text-input {
-      flex: 1;
+      width: 100%;
       height: 38px;
       padding: 0 var(--bm-space-3);
       border: 1px solid var(--bm-color-border);
       border-radius: var(--bm-radius-md);
       font-size: var(--bm-font-size-sm);
+      color: var(--bm-color-text-primary);
+      background-color: var(--bm-color-surface);
       outline: none;
+      transition: border-color var(--bm-transition-fast), box-shadow var(--bm-transition-fast);
 
       &:focus {
         border-color: var(--bm-color-primary);
+        box-shadow: 0 0 0 3px var(--bm-color-primary-focus);
       }
-    }
-
-    .bm-select-sm {
-      height: 38px;
-      padding: 0 var(--bm-space-3);
-      border: 1px solid var(--bm-color-border);
-      border-radius: var(--bm-radius-md);
-      background-color: var(--bm-color-surface);
-      font-size: var(--bm-font-size-sm);
-      outline: none;
     }
 
     // Photo grid
@@ -945,6 +970,24 @@ export class MyStoreComponent implements OnInit {
 
   readonly keralaDistricts = KERALA_DISTRICTS;
   readonly businessTypes = BUSINESS_TYPES;
+
+  readonly photoCategoryOptions = [
+    { label: 'Exterior Storefront', value: 'EXTERIOR', description: 'Street view showing store entrance and board' },
+    { label: 'Interior Store Layout', value: 'INTERIOR', description: 'Overview of retail space and shelves' },
+    { label: 'Product Display Counter', value: 'DISPLAY_AREA', description: 'Main goods showcase and racks' },
+    { label: 'Storage & Stockroom', value: 'STORAGE', description: 'Bulk storage or inventory area' },
+    { label: 'Billing / POS Counter', value: 'BILLING_COUNTER', description: 'Customer checkout station' },
+    { label: 'Other Verification Photo', value: 'OTHER', description: 'Supporting photo proof' },
+  ];
+
+  readonly docTypeOptions = [
+    { label: 'GST Registration Certificate', value: 'GST_CERTIFICATE', description: 'Government GST document' },
+    { label: 'Business PAN Card', value: 'PAN_CARD', description: 'Income tax permanent account number' },
+    { label: 'Trade License / Local Permit', value: 'TRADE_LICENSE', description: 'Panchayath / Municipality permit' },
+    { label: 'FSSAI Food Safety License', value: 'FSSAI_LICENSE', description: 'Food business operator registration' },
+    { label: 'Store Lease / Rental Agreement', value: 'RENTAL_AGREEMENT', description: 'Storefront ownership or lease' },
+    { label: 'Other Official Business Proof', value: 'OTHER', description: 'Supporting legal establishment document' },
+  ];
 
   readonly merchant = signal<MerchantRecord | null>(null);
   readonly isLoading = signal<boolean>(true);

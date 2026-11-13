@@ -133,6 +133,9 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
       display: flex;
       flex-direction: column;
       gap: var(--bm-space-6);
+      width: 100%;
+      max-width: 1080px;
+      margin: 0 auto;
     }
 
     .bm-profile-grid {
