@@ -10,10 +10,12 @@ import {
   Layers,
   LucideAngularModule,
   QrCode,
+  ShieldCheck,
   ShoppingBag,
   TrendingUp,
 } from 'lucide-angular';
 import { AuthService } from '../../../../core/auth/services/auth.service';
+import { AdminMerchantService } from '../../../../core/services/admin-merchant.service';
 import { BadgeComponent } from '../../../../shared/ui/badge/badge.component';
 import { CardComponent } from '../../../../shared/ui/card/card.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
@@ -42,6 +44,32 @@ import {
         title="Store Operations Dashboard"
         subtitle="Kerala community group buying, campaign progression & pickup queue"
       ></bm-page-header>
+
+      <!-- Admin Store Verification Banner (Prominent when user is Admin) -->
+      @if (authService.userRole() === 'ADMIN' && adminPendingCount() > 0) {
+        <div class="bm-admin-banner">
+          <div class="bm-admin-banner-left">
+            <div class="bm-admin-banner-icon">
+              <lucide-icon [img]="ShieldCheckIcon" [size]="22"></lucide-icon>
+            </div>
+            <div class="bm-admin-banner-text">
+              <span class="bm-admin-banner-title">
+                Platform Store Verification
+                @if (adminPendingCount() > 0) {
+                  <span class="bm-badge-alert">{{ adminPendingCount() }} Pending Review</span>
+                }
+              </span>
+              <span class="bm-admin-banner-sub">
+                Merchant storefront applications awaiting territory verification and KYC review.
+              </span>
+            </div>
+          </div>
+          <a routerLink="/admin/merchants" class="bm-admin-banner-link">
+            <span>Review Applications ({{ adminPendingCount() }})</span>
+            <lucide-icon [img]="ArrowUpRightIcon" [size]="15"></lucide-icon>
+          </a>
+        </div>
+      }
 
       <!-- Isolated Mock Data Notice -->
       <div class="bm-mock-banner" role="note">
@@ -170,6 +198,15 @@ import {
           <!-- Quick Navigation Card -->
           <bm-card title="Quick Operations">
             <div class="bm-quick-links">
+              @if (authService.userRole() === 'ADMIN') {
+                <a routerLink="/admin/merchants" class="bm-quick-item bm-quick-admin">
+                  <lucide-icon [img]="ShieldCheckIcon" [size]="16"></lucide-icon>
+                  <span>Store Applications</span>
+                  @if (adminPendingCount() > 0) {
+                    <span class="bm-quick-badge">{{ adminPendingCount() }}</span>
+                  }
+                </a>
+              }
               <a routerLink="/store/products" class="bm-quick-item">
                 <lucide-icon [img]="ShoppingBagIcon" [size]="16"></lucide-icon>
                 <span>Product Catalogue</span>
@@ -504,26 +541,146 @@ import {
         color: var(--bm-color-primary);
       }
     }
+
+    .bm-quick-admin {
+      background-color: var(--bm-color-primary-soft);
+      color: var(--bm-color-primary);
+
+      &:hover {
+        background-color: #D6ECE0;
+        color: var(--bm-color-primary-hover);
+      }
+    }
+
+    .bm-quick-badge {
+      margin-left: auto;
+      background-color: var(--bm-color-warning);
+      color: #FFFFFF;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: var(--bm-radius-full);
+    }
+
+    // Admin Banner
+    .bm-admin-banner {
+      display: flex;
+      flex-direction: column;
+      gap: var(--bm-space-3);
+      padding: var(--bm-space-4);
+      background-color: var(--bm-color-surface);
+      border: 1px solid var(--bm-color-border);
+      border-left: 4px solid var(--bm-color-primary);
+      border-radius: var(--bm-radius-md);
+
+      @media (min-width: 640px) {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .bm-admin-banner-left {
+      display: flex;
+      align-items: center;
+      gap: var(--bm-space-3);
+    }
+
+    .bm-admin-banner-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--bm-radius-md);
+      background-color: var(--bm-color-primary-soft);
+      color: var(--bm-color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .bm-admin-banner-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .bm-admin-banner-title {
+      font-size: var(--bm-font-size-sm);
+      font-weight: var(--bm-font-weight-semibold);
+      color: var(--bm-color-text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .bm-badge-alert {
+      font-size: 11px;
+      font-weight: 700;
+      background-color: #FEF3C7;
+      color: #92400E;
+      padding: 1px 7px;
+      border-radius: var(--bm-radius-full);
+      border: 1px solid rgba(217, 119, 6, 0.3);
+    }
+
+    .bm-admin-banner-sub {
+      font-size: var(--bm-font-size-xs);
+      color: var(--bm-color-text-secondary);
+    }
+
+    .bm-admin-banner-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background-color: var(--bm-color-primary);
+      color: #FFFFFF;
+      border-radius: var(--bm-radius-md);
+      font-size: var(--bm-font-size-xs);
+      font-weight: var(--bm-font-weight-medium);
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background-color var(--bm-transition-fast);
+
+      &:hover {
+        background-color: var(--bm-color-primary-hover);
+      }
+    }
   `],
 })
 export class DashboardPageComponent implements OnInit {
   private readonly mockService = inject(DashboardMockService);
+  private readonly adminService = inject(AdminMerchantService);
   readonly authService = inject(AuthService);
 
   readonly ShoppingBagIcon = ShoppingBag;
   readonly LayersIcon = Layers;
   readonly QrCodeIcon = QrCode;
+  readonly ShieldCheckIcon = ShieldCheck;
+  readonly ArrowUpRightIcon = ArrowUpRight;
 
   readonly metrics = signal<DashboardMetric[]>([]);
   readonly recentOrders = signal<DashboardRecentOrder[]>([]);
   readonly pickupQueue = signal<DashboardPickupItem[]>([]);
   readonly activityChart = signal<ActivityDay[]>([]);
 
+  readonly adminPendingCount = signal<number>(0);
+  readonly adminAllCount = signal<number>(0);
+
   ngOnInit(): void {
     this.mockService.getMockMetrics().subscribe((res) => this.metrics.set(res));
     this.mockService.getMockRecentOrders().subscribe((res) => this.recentOrders.set(res));
     this.mockService.getMockPickupQueue().subscribe((res) => this.pickupQueue.set(res));
     this.mockService.getMockActivityChart().subscribe((res) => this.activityChart.set(res));
+
+    if (this.authService.userRole() === 'ADMIN') {
+      this.adminService.listApplications().subscribe({
+        next: (apps) => {
+          this.adminAllCount.set(apps.length);
+          this.adminPendingCount.set(apps.filter((a) => a.status === 'PENDING_REVIEW').length);
+        },
+      });
+    }
   }
 
   getOrderBadgeVariant(status: DashboardRecentOrder['status']): 'success' | 'warning' | 'info' | 'neutral' | 'danger' {

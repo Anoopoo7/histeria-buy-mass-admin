@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import {
   Boxes,
@@ -19,6 +19,8 @@ import {
   X,
 } from 'lucide-angular';
 import { AuthService } from '../../core/auth/services/auth.service';
+import { AdminMerchantService } from '../../core/services/admin-merchant.service';
+import { TokenStorageService } from '../../core/services/token-storage.service';
 import { AvatarComponent } from '../../shared/ui/avatar/avatar.component';
 import { BadgeComponent } from '../../shared/ui/badge/badge.component';
 import { DropdownComponent } from '../../shared/ui/dropdown/dropdown.component';
@@ -121,6 +123,9 @@ import { DropdownComponent } from '../../shared/ui/dropdown/dropdown.component';
               >
                 <lucide-icon [img]="ShieldCheckIcon" [size]="18"></lucide-icon>
                 <span>Store Applications</span>
+                @if (pendingApplicationsCount() > 0) {
+                  <span class="bm-nav-badge-pill">{{ pendingApplicationsCount() }}</span>
+                }
               </a>
             </div>
           }
@@ -263,6 +268,19 @@ import { DropdownComponent } from '../../shared/ui/dropdown/dropdown.component';
                   <lucide-icon [img]="SettingsIcon" [size]="16"></lucide-icon>
                   <span>Store Settings</span>
                 </a>
+
+                @if (isAdmin()) {
+                  <a
+                    routerLink="/admin/merchants"
+                    class="bm-dropdown-item"
+                  >
+                    <lucide-icon [img]="ShieldCheckIcon" [size]="16"></lucide-icon>
+                    <span>Store Applications</span>
+                    @if (pendingApplicationsCount() > 0) {
+                      <span class="bm-nav-badge-pill bm-dropdown-pill">{{ pendingApplicationsCount() }}</span>
+                    }
+                  </a>
+                }
 
                 <div class="bm-dropdown-divider"></div>
 
@@ -430,6 +448,22 @@ import { DropdownComponent } from '../../shared/ui/dropdown/dropdown.component';
           color: var(--bm-color-primary);
         }
       }
+    }
+
+    .bm-nav-badge-pill {
+      margin-left: auto;
+      background-color: var(--bm-color-warning);
+      color: #FFFFFF;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: var(--bm-radius-full);
+      line-height: 1.4;
+    }
+
+    .bm-dropdown-pill {
+      font-size: 10px;
+      padding: 0 6px;
     }
 
     .bm-nav-logout {
@@ -621,8 +655,10 @@ import { DropdownComponent } from '../../shared/ui/dropdown/dropdown.component';
     }
   `],
 })
-export class DashboardShellComponent {
+export class DashboardShellComponent implements OnInit {
   readonly authService = inject(AuthService);
+  private readonly adminService = inject(AdminMerchantService);
+  private readonly tokenStorage = inject(TokenStorageService);
 
   readonly StoreIcon = Store;
   readonly DashboardIcon = LayoutDashboard;
@@ -640,6 +676,7 @@ export class DashboardShellComponent {
   readonly ShieldCheckIcon = ShieldCheck;
 
   readonly isMobileMenuOpen = signal<boolean>(false);
+  readonly pendingApplicationsCount = signal<number>(0);
 
   readonly isAdmin = computed(() => this.authService.userRole() === 'ADMIN');
   readonly userName = computed(() => this.authService.currentUser()?.name || 'Merchant User');
@@ -649,6 +686,33 @@ export class DashboardShellComponent {
     if (role === 'ADMIN') return 'Store Administrator';
     return 'Store Manager';
   });
+
+  ngOnInit(): void {
+    if (this.authService.isAuthenticated()) {
+      // If role is not yet ADMIN, attempt a token refresh to synchronize with DB role updates
+      if (this.authService.userRole() !== 'ADMIN' && this.tokenStorage.getRefreshToken()) {
+        this.authService.refreshTokens().subscribe({
+          next: () => {
+            if (this.isAdmin()) {
+              this.fetchPendingCount();
+            }
+          },
+          error: () => {},
+        });
+      } else if (this.isAdmin()) {
+        this.fetchPendingCount();
+      }
+    }
+  }
+
+  fetchPendingCount(): void {
+    this.adminService.listApplications('PENDING_REVIEW').subscribe({
+      next: (apps) => {
+        this.pendingApplicationsCount.set(apps.length);
+      },
+      error: () => {},
+    });
+  }
 
   readonly merchantBadgeVariant = computed(() => {
     const status = this.authService.currentMerchant()?.status;

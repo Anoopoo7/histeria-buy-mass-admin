@@ -64,7 +64,7 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
         >
           <span>Pending Review</span>
           @if (pendingCount() > 0) {
-            <span class="bm-count-pill">{{ pendingCount() }}</span>
+            <span class="bm-count-pill bm-count-warning">{{ pendingCount() }}</span>
           }
         </button>
 
@@ -75,6 +75,9 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
           (click)="filterByStatus(undefined)"
         >
           <span>All Applications</span>
+          @if (allCount() > 0) {
+            <span class="bm-count-pill">{{ allCount() }}</span>
+          }
         </button>
 
         <button
@@ -84,6 +87,9 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
           (click)="filterByStatus('APPROVED')"
         >
           <span>Approved</span>
+          @if (approvedCount() > 0) {
+            <span class="bm-count-pill bm-count-success">{{ approvedCount() }}</span>
+          }
         </button>
 
         <button
@@ -93,6 +99,9 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
           (click)="filterByStatus('REJECTED')"
         >
           <span>Rejected</span>
+          @if (rejectedCount() > 0) {
+            <span class="bm-count-pill bm-count-danger">{{ rejectedCount() }}</span>
+          }
         </button>
 
         <button
@@ -102,6 +111,9 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
           (click)="filterByStatus('DRAFT')"
         >
           <span>Drafts</span>
+          @if (draftCount() > 0) {
+            <span class="bm-count-pill">{{ draftCount() }}</span>
+          }
         </button>
       </div>
 
@@ -120,6 +132,13 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
             <div bmEmptyIcon>
               <lucide-icon [img]="StoreIcon" [size]="40"></lucide-icon>
             </div>
+            @if (selectedStatus() !== undefined && allCount() > 0) {
+              <div bmEmptyActions style="margin-top: 12px;">
+                <bm-button variant="primary" size="sm" (btnClick)="filterByStatus(undefined)">
+                  <span>View All Applications ({{ allCount() }})</span>
+                </bm-button>
+              </div>
+            }
           </bm-empty-state>
         } @else {
           <div class="bm-table-wrapper">
@@ -249,12 +268,27 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
     }
 
     .bm-count-pill {
-      background-color: var(--bm-color-warning-bg);
-      color: var(--bm-color-warning);
+      background-color: var(--bm-color-surface-subtle);
+      color: var(--bm-color-text-secondary);
       font-size: 11px;
-      padding: 1px 6px;
+      padding: 1px 7px;
       border-radius: var(--bm-radius-full);
       font-weight: var(--bm-font-weight-bold);
+    }
+
+    .bm-count-warning {
+      background-color: #FEF3C7;
+      color: #92400E;
+    }
+
+    .bm-count-success {
+      background-color: #E8F3ED;
+      color: var(--bm-color-primary);
+    }
+
+    .bm-count-danger {
+      background-color: #FEE2E2;
+      color: #DC2626;
     }
 
     .bm-loading-box {
@@ -382,7 +416,11 @@ export class AdminMerchantsListComponent implements OnInit {
   readonly selectedStatus = signal<MerchantStatus | undefined>('PENDING_REVIEW');
   readonly isLoading = signal<boolean>(false);
 
+  readonly allCount = signal<number>(0);
   readonly pendingCount = signal<number>(0);
+  readonly approvedCount = signal<number>(0);
+  readonly rejectedCount = signal<number>(0);
+  readonly draftCount = signal<number>(0);
 
   ngOnInit(): void {
     this.loadApplications();
@@ -401,10 +439,14 @@ export class AdminMerchantsListComponent implements OnInit {
       },
     });
 
-    // Also fetch pending count
-    this.adminService.listApplications('PENDING_REVIEW').subscribe({
-      next: (pending) => {
-        this.pendingCount.set(pending.length);
+    // Also fetch all applications to calculate counts across all statuses
+    this.adminService.listApplications().subscribe({
+      next: (all) => {
+        this.allCount.set(all.length);
+        this.pendingCount.set(all.filter((a) => a.status === 'PENDING_REVIEW').length);
+        this.approvedCount.set(all.filter((a) => a.status === 'APPROVED').length);
+        this.rejectedCount.set(all.filter((a) => a.status === 'REJECTED').length);
+        this.draftCount.set(all.filter((a) => a.status === 'DRAFT').length);
       },
     });
   }
