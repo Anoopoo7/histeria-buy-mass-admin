@@ -100,15 +100,6 @@ import { DropdownComponent } from '../../shared/ui/dropdown/dropdown.component';
               <lucide-icon [img]="ProductsIcon" [size]="18"></lucide-icon>
               <span>Products</span>
             </a>
-            <a
-              routerLink="/store/inventory"
-              routerLinkActive="active"
-              (click)="closeMobileMenu()"
-              class="bm-nav-item"
-            >
-              <lucide-icon [img]="InventoryIcon" [size]="18"></lucide-icon>
-              <span>Inventory</span>
-            </a>
           </div>
 
           <!-- Admin Portal (Only visible to ADMIN role) -->
@@ -689,6 +680,10 @@ export class DashboardShellComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.authService.isAuthenticated()) {
+      if (!this.authService.currentMerchant()) {
+        this.authService.loadCurrentMerchantProfile().subscribe({ error: () => {} });
+      }
+
       // If role is not yet ADMIN, attempt a token refresh to synchronize with DB role updates
       if (this.authService.userRole() !== 'ADMIN' && this.tokenStorage.getRefreshToken()) {
         this.authService.refreshTokens().subscribe({
@@ -697,7 +692,7 @@ export class DashboardShellComponent implements OnInit {
               this.fetchPendingCount();
             }
           },
-          error: () => {},
+          error: () => { },
         });
       } else if (this.isAdmin()) {
         this.fetchPendingCount();
@@ -710,7 +705,7 @@ export class DashboardShellComponent implements OnInit {
       next: (apps) => {
         this.pendingApplicationsCount.set(apps.length);
       },
-      error: () => {},
+      error: () => { },
     });
   }
 

@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, catchError, map, of, tap, throwError } from 'rxjs';
+import { Observable, catchError, map, of, switchMap, tap, throwError } from 'rxjs';
 import {
   AuthResponse,
   LoginRequest,
@@ -53,6 +53,7 @@ export class AuthService {
 
   /**
    * Initializes auth session on app startup by rotating refresh token if present
+   * and synchronizing current user & merchant profile state.
    */
   initializeSession(): Observable<boolean> {
     const refreshToken = this.tokenStorage.getRefreshToken();
@@ -63,6 +64,11 @@ export class AuthService {
 
     this._isLoading.set(true);
     return this.refreshTokens().pipe(
+      switchMap(() =>
+        this.loadCurrentMerchantProfile().pipe(
+          catchError(() => of(null)),
+        ),
+      ),
       map(() => {
         this._isInitialized.set(true);
         this._isLoading.set(false);
