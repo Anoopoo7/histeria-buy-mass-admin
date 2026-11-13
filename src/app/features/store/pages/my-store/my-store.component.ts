@@ -12,6 +12,7 @@ import {
   FileCheck2,
   FileText,
   Image as ImageIcon,
+  Lock,
   LucideAngularModule,
   MapPin,
   Phone,
@@ -43,6 +44,7 @@ import { InputComponent } from '../../../../shared/ui/input/input.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
 import { SelectComponent } from '../../../../shared/ui/select/select.component';
 import { GeoCoordinates, LocationPickerComponent } from '../../../../shared/ui/location-picker/location-picker.component';
+import { OtpInputComponent } from '../../../../shared/ui/otp-input/otp-input.component';
 
 export const KERALA_DISTRICTS = [
   'Alappuzha',
@@ -88,6 +90,7 @@ export const BUSINESS_TYPES = [
     InputComponent,
     SelectComponent,
     LocationPickerComponent,
+    OtpInputComponent,
     EmptyStateComponent,
   ],
   template: `
@@ -575,71 +578,80 @@ export const BUSINESS_TYPES = [
             </div>
 
             <div class="bm-modal-body">
-              @if (phoneModalStep() === 'PHONE') {
-                <div class="bm-phone-step">
-                  <p class="bm-step-desc">
-                    Confirm your WhatsApp phone number below. We will send an instant 6-digit verification code to authenticate your merchant account.
-                  </p>
-
-                  <bm-input
-                    id="verify-modal-phone"
-                    label="WhatsApp Phone Number"
-                    placeholder="e.g. +91 98765 43210"
-                    [required]="true"
-                    [(ngModel)]="verificationPhone"
-                    hint="Include country code (e.g. +919876543210)"
-                    [error]="phoneSendError()"
-                  ></bm-input>
-
-                  <div class="bm-modal-actions">
-                    <bm-button
-                      type="button"
-                      variant="outline"
-                      size="md"
-                      (btnClick)="closePhoneModal()"
-                    >
-                      <span>Cancel</span>
-                    </bm-button>
-
-                    <bm-button
-                      type="button"
-                      variant="primary"
-                      size="md"
-                      [loading]="isSendingOtp()"
-                      [disabled]="!verificationPhone || isSendingOtp()"
-                      (btnClick)="sendVerificationOtp()"
-                    >
-                      <lucide-icon [img]="SendIcon" [size]="16" bmLeading></lucide-icon>
-                      <span>Send WhatsApp OTP</span>
-                    </bm-button>
+              <!-- Profile Registered Phone Display (Non-editable / Locked to account profile) -->
+              <div class="bm-registered-phone-card">
+                <div class="bm-phone-row">
+                  <div class="bm-phone-text-group">
+                    <span class="bm-phone-badge-label">Registered Account Phone</span>
+                    <span class="bm-phone-value">{{ formattedRegisteredPhone() || 'No phone registered in profile' }}</span>
+                  </div>
+                  <div class="bm-phone-lock-tag" title="Phone is linked to your user profile and cannot be modified here">
+                    <lucide-icon [img]="LockIcon" [size]="13"></lucide-icon>
+                    <span>Profile Bound</span>
                   </div>
                 </div>
+                <p class="bm-phone-help">
+                  Verification OTP is dispatched exclusively to your registered account phone via WhatsApp.
+                </p>
+              </div>
+
+              @if (phoneSendError()) {
+                <div class="bm-alert-banner bm-alert-danger" role="alert" style="margin-bottom: 12px;">
+                  <span>{{ phoneSendError() }}</span>
+                </div>
+              }
+
+              @if (phoneVerifyError()) {
+                <div class="bm-alert-banner bm-alert-danger" role="alert" style="margin-bottom: 12px;">
+                  <span>{{ phoneVerifyError() }}</span>
+                </div>
+              }
+
+              @if (phoneModalStep() === 'PHONE') {
+                <div class="bm-modal-actions" style="margin-top: 16px;">
+                  <bm-button
+                    type="button"
+                    variant="outline"
+                    size="md"
+                    (btnClick)="closePhoneModal()"
+                  >
+                    <span>Cancel</span>
+                  </bm-button>
+
+                  <bm-button
+                    type="button"
+                    variant="primary"
+                    size="md"
+                    [loading]="isSendingOtp()"
+                    [disabled]="!formattedRegisteredPhone() || isSendingOtp()"
+                    (btnClick)="sendVerificationOtp()"
+                  >
+                    <lucide-icon [img]="SendIcon" [size]="16" bmLeading></lucide-icon>
+                    <span>Send WhatsApp OTP</span>
+                  </bm-button>
+                </div>
               } @else {
-                <div class="bm-otp-step">
-                  <div class="bm-otp-sent-info">
+                <!-- OTP Entry Step with dedicated 6-box OTP Component -->
+                <div class="bm-otp-section">
+                  <div class="bm-otp-sent-banner">
                     <lucide-icon [img]="CheckCircleIcon" [size]="16" class="text-success"></lucide-icon>
-                    <span>6-digit OTP sent to <strong>{{ verificationPhone }}</strong></span>
-                    <button type="button" class="bm-change-phone-btn" (click)="changePhone()">Edit</button>
+                    <span>6-digit OTP code dispatched to <strong>{{ formattedRegisteredPhone() }}</strong> via WhatsApp</span>
                   </div>
 
-                  @if (phoneVerifyError()) {
-                    <div class="bm-alert-banner bm-alert-danger" role="alert" style="margin-bottom: 12px;">
-                      <span>{{ phoneVerifyError() }}</span>
-                    </div>
-                  }
-
-                  <bm-input
-                    id="verify-modal-otp"
-                    label="Enter 6-Digit WhatsApp OTP"
-                    placeholder="123456"
-                    [required]="true"
-                    [(ngModel)]="verificationOtp"
-                    hint="Enter the code sent to your WhatsApp by BuyMass"
-                  ></bm-input>
+                  <div class="bm-otp-input-area">
+                    <label class="bm-otp-field-label">Enter 6-Digit WhatsApp Code</label>
+                    <bm-otp-input
+                      [length]="6"
+                      [hasError]="!!phoneVerifyError()"
+                      [(ngModel)]="verificationOtp"
+                      (otpComplete)="onOtpAutoCompleted($event)"
+                    ></bm-otp-input>
+                    <span class="bm-otp-hint">Type each digit or paste the full 6-digit code</span>
+                  </div>
 
                   <div class="bm-resend-row">
                     @if (resendCooldown() > 0) {
-                      <span class="bm-cooldown-text">Resend code in {{ resendCooldown() }}s</span>
+                      <span class="bm-cooldown-text">Resend WhatsApp code in {{ resendCooldown() }}s</span>
                     } @else {
                       <button
                         type="button"
@@ -657,9 +669,9 @@ export const BUSINESS_TYPES = [
                       type="button"
                       variant="outline"
                       size="md"
-                      (btnClick)="changePhone()"
+                      (btnClick)="closePhoneModal()"
                     >
-                      <span>Back</span>
+                      <span>Cancel</span>
                     </bm-button>
 
                     <bm-button
@@ -667,7 +679,7 @@ export const BUSINESS_TYPES = [
                       variant="primary"
                       size="md"
                       [loading]="isVerifyingOtp()"
-                      [disabled]="!verificationOtp || verificationOtp.length < 6 || isVerifyingOtp()"
+                      [disabled]="verificationOtp.length < 6 || isVerifyingOtp()"
                       (btnClick)="verifyOtpAndSubmitStore()"
                     >
                       <lucide-icon [img]="ShieldCheckIcon" [size]="16" bmLeading></lucide-icon>
@@ -1255,41 +1267,108 @@ export const BUSINESS_TYPES = [
       }
     }
 
-    .bm-step-desc {
-      font-size: var(--bm-font-size-xs);
-      color: var(--bm-color-text-secondary);
-      line-height: 1.5;
-      margin: 0 0 var(--bm-space-3) 0;
+    // Registered phone card
+    .bm-registered-phone-card {
+      background-color: var(--bm-color-surface-subtle);
+      border: 1px solid var(--bm-color-border);
+      border-radius: var(--bm-radius-md);
+      padding: var(--bm-space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--bm-space-2);
+      margin-bottom: var(--bm-space-4);
     }
 
-    .bm-otp-sent-info {
+    .bm-phone-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--bm-space-3);
+    }
+
+    .bm-phone-text-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .bm-phone-badge-label {
+      font-size: 11px;
+      color: var(--bm-color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .bm-phone-value {
+      font-family: var(--bm-font-mono);
+      font-size: var(--bm-font-size-base);
+      font-weight: var(--bm-font-weight-semibold);
+      color: var(--bm-color-primary);
+    }
+
+    .bm-phone-lock-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      background-color: var(--bm-color-surface);
+      border: 1px solid var(--bm-color-border);
+      border-radius: var(--bm-radius-full);
+      font-size: 11px;
+      font-weight: var(--bm-font-weight-medium);
+      color: var(--bm-color-text-secondary);
+    }
+
+    .bm-phone-help {
+      font-size: 11px;
+      color: var(--bm-color-text-secondary);
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    // OTP section
+    .bm-otp-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--bm-space-4);
+    }
+
+    .bm-otp-sent-banner {
       display: flex;
       align-items: center;
       gap: var(--bm-space-2);
       padding: var(--bm-space-3);
-      background-color: var(--bm-color-surface-subtle);
+      background-color: #E8F3ED;
+      border: 1px solid rgba(23, 107, 80, 0.2);
       border-radius: var(--bm-radius-md);
       font-size: var(--bm-font-size-xs);
-      color: var(--bm-color-text-primary);
-      margin-bottom: var(--bm-space-3);
+      color: var(--bm-color-primary);
     }
 
-    .bm-change-phone-btn {
-      margin-left: auto;
-      background: none;
-      border: none;
-      color: var(--bm-color-primary);
-      font-size: 11px;
+    .bm-otp-input-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .bm-otp-field-label {
+      font-size: var(--bm-font-size-sm);
       font-weight: var(--bm-font-weight-medium);
-      text-decoration: underline;
-      cursor: pointer;
-      padding: 0;
+      color: var(--bm-color-text-primary);
+      text-align: center;
+    }
+
+    .bm-otp-hint {
+      font-size: 11px;
+      color: var(--bm-color-text-muted);
+      text-align: center;
     }
 
     .bm-resend-row {
       display: flex;
-      justify-content: flex-end;
-      margin-top: 4px;
+      justify-content: center;
+      margin-top: 2px;
     }
 
     .bm-cooldown-text {
@@ -1341,6 +1420,7 @@ export class MyStoreComponent implements OnInit, OnDestroy {
   readonly ExternalLinkIcon = ExternalLink;
   readonly PhoneIcon = Phone;
   readonly ShieldCheckIcon = ShieldCheck;
+  readonly LockIcon = Lock;
   readonly XIcon = X;
 
   readonly showPhoneModal = signal<boolean>(false);
@@ -1351,9 +1431,16 @@ export class MyStoreComponent implements OnInit, OnDestroy {
   readonly phoneVerifyError = signal<string | null>(null);
   readonly resendCooldown = signal<number>(0);
 
-  verificationPhone: string = '';
   verificationOtp: string = '';
   private cooldownInterval: any = null;
+
+  readonly formattedRegisteredPhone = computed(() => {
+    const raw = this.authService.currentUser()?.phone?.trim() || '';
+    if (!raw) return '';
+    if (raw.startsWith('+')) return raw;
+    if (raw.startsWith('91') && raw.length === 12) return `+${raw}`;
+    return `+91${raw}`;
+  });
 
   readonly isPhoneError = computed(() => {
     const msg = (this.errorMessage() || '').toLowerCase();
@@ -1461,8 +1548,6 @@ export class MyStoreComponent implements OnInit, OnDestroy {
   }
 
   openPhoneVerificationModal(): void {
-    const userPhone = this.authService.currentUser()?.phone || '';
-    this.verificationPhone = userPhone;
     this.verificationOtp = '';
     this.phoneSendError.set(null);
     this.phoneVerifyError.set(null);
@@ -1478,32 +1563,23 @@ export class MyStoreComponent implements OnInit, OnDestroy {
     }
   }
 
-  changePhone(): void {
-    this.phoneModalStep.set('PHONE');
-    this.verificationOtp = '';
-    this.phoneVerifyError.set(null);
-    if (this.cooldownInterval) {
-      clearInterval(this.cooldownInterval);
-      this.resendCooldown.set(0);
-    }
-  }
-
   sendVerificationOtp(): void {
-    const phone = this.verificationPhone.trim();
+    const phone = this.formattedRegisteredPhone();
     if (!phone) {
-      this.phoneSendError.set('Please enter a valid WhatsApp phone number.');
+      this.phoneSendError.set('No registered phone number found on your account. Please check your profile.');
       return;
     }
 
     this.isSendingOtp.set(true);
     this.phoneSendError.set(null);
+    this.phoneVerifyError.set(null);
 
     this.authService.sendPhoneOtp(phone).subscribe({
       next: () => {
         this.isSendingOtp.set(false);
         this.phoneModalStep.set('OTP');
         this.startCooldown();
-        this.toast.success('6-digit WhatsApp OTP sent successfully!');
+        this.toast.success(`6-digit WhatsApp OTP sent to ${phone}!`);
       },
       error: (err: ApiError) => {
         this.isSendingOtp.set(false);
@@ -1513,11 +1589,11 @@ export class MyStoreComponent implements OnInit, OnDestroy {
   }
 
   verifyOtpAndSubmitStore(): void {
-    const phone = this.verificationPhone.trim();
+    const phone = this.formattedRegisteredPhone();
     const otp = this.verificationOtp.trim();
 
     if (!otp || otp.length < 6) {
-      this.phoneVerifyError.set('Please enter the 6-digit OTP received via WhatsApp.');
+      this.phoneVerifyError.set('Please enter the complete 6-digit OTP received via WhatsApp.');
       return;
     }
 
@@ -1531,14 +1607,18 @@ export class MyStoreComponent implements OnInit, OnDestroy {
         this.errorMessage.set(null);
         this.toast.success('Phone verified successfully! Submitting your store application...');
 
-        // Resumes and submits store creation flow with existing form values
+        // Resumes and automatically submits store creation flow with existing form values
         this.onCreateStore();
       },
       error: (err: ApiError) => {
         this.isVerifyingOtp.set(false);
-        this.phoneVerifyError.set(err.message || 'Invalid or expired OTP. Please try again.');
+        this.phoneVerifyError.set(err.message || 'Invalid or expired OTP. Please check the code and try again.');
       },
     });
+  }
+
+  onOtpAutoCompleted(code: string): void {
+    this.verificationOtp = code;
   }
 
   private startCooldown(): void {

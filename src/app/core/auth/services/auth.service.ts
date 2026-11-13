@@ -161,26 +161,22 @@ export class AuthService {
 
   /**
    * Verify phone number with 6-digit WhatsApp OTP
-   * POST /api/v1/auth/phone/otp/verify (with fallback to /api/v1/auth/verify-phone)
+   * POST /api/v1/auth/phone/otp/verify
    */
   verifyPhone(phone: string, otp: string): Observable<VerifyPhoneOtpResponse> {
     this._isLoading.set(true);
-    const request: VerifyPhoneOtpRequest = { phone, otp };
+    const request: VerifyPhoneOtpRequest = { phone: phone.trim(), otp: otp.trim() };
 
     return this.apiClient
       .post<VerifyPhoneOtpResponse>('/api/v1/auth/phone/otp/verify', request)
       .pipe(
-        catchError(() => {
-          // Fallback to OpenAPI route if different deployment alias is mounted
-          return this.apiClient.post<VerifyPhoneOtpResponse>('/api/v1/auth/verify-phone', request);
-        }),
         tap((res) => {
           this._isLoading.set(false);
           this.toast.success(res.message || 'Phone number verified successfully');
           // Update current user signal if logged in
           const current = this._currentUser();
           if (current) {
-            this._currentUser.set({ ...current, isPhoneVerified: true });
+            this._currentUser.set({ ...current, isPhoneVerified: true, phone: phone.trim() });
           }
         }),
         catchError((err: ApiError) => {
