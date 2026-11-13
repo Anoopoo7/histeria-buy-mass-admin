@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import {
   AlertCircle,
   AlertTriangle,
@@ -1378,6 +1378,7 @@ export class OrdersPageComponent implements OnInit {
   readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   // Icons
   readonly ShoppingBagIcon = ShoppingBag;
@@ -1576,6 +1577,11 @@ export class OrdersPageComponent implements OnInit {
     this.currentPage.set(1);
     this.selectedStatus.set(mode === 'PICKUPS' ? 'READY_FOR_PICKUP' : undefined);
     this.loadOrders();
+    if (mode === 'PICKUPS') {
+      this.router.navigate(['/orders/pickups']);
+    } else if (mode === 'ALL_ORDERS') {
+      this.router.navigate(['/orders']);
+    }
   }
 
   onSelectStatus(status?: OrderStatus): void {

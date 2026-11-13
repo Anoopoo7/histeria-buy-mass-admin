@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -16,6 +17,9 @@ import {
 } from 'lucide-angular';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { AdminMerchantService } from '../../../../core/services/admin-merchant.service';
+import { OrderService } from '../../../../core/services/order.service';
+import { PoolService } from '../../../../core/services/pool.service';
+import { ProductService } from '../../../../core/services/product.service';
 import { BadgeComponent } from '../../../../shared/ui/badge/badge.component';
 import { CardComponent } from '../../../../shared/ui/card/card.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
@@ -71,14 +75,24 @@ import {
         </div>
       }
 
-      <!-- Isolated Mock Data Notice -->
-      <div class="bm-mock-banner" role="note">
-        <div class="bm-mock-badge">DEV PREVIEW</div>
-        <p class="bm-mock-text">
-          Metrics below reflect <strong>isolated development mock data</strong>.
-          Live store metrics will connect as backend analytics endpoints are published.
-        </p>
-      </div>
+      <!-- Operations Banner -->
+      @if (isLiveStore()) {
+        <div class="bm-live-banner" role="status">
+          <div class="bm-live-badge">LIVE STORE</div>
+          <p class="bm-live-text">
+            Displaying real-time operational data for <strong>{{ authService.currentMerchant()?.storeName }}</strong>.
+          </p>
+        </div>
+      } @else {
+        <!-- Isolated Mock Data Notice -->
+        <div class="bm-mock-banner" role="note">
+          <div class="bm-mock-badge">DEV PREVIEW</div>
+          <p class="bm-mock-text">
+            Metrics below reflect <strong>isolated development mock data</strong>.
+            Live store metrics will connect as backend analytics endpoints are published.
+          </p>
+        </div>
+      }
 
       <!-- Key Metric Cards Grid -->
       <div class="bm-metrics-grid">
@@ -230,6 +244,38 @@ import {
       display: flex;
       flex-direction: column;
       gap: var(--bm-space-6);
+    }
+
+    // Live Banner
+    .bm-live-banner {
+      display: flex;
+      align-items: center;
+      gap: var(--bm-space-3);
+      padding: var(--bm-space-3) var(--bm-space-4);
+      background-color: var(--bm-color-surface);
+      border: 1px solid var(--bm-color-border);
+      border-left: 3px solid var(--bm-color-primary, #176B50);
+      border-radius: var(--bm-radius-md);
+      font-size: var(--bm-font-size-xs);
+    }
+
+    .bm-live-badge {
+      font-size: 10px;
+      font-weight: var(--bm-font-weight-bold);
+      background-color: var(--bm-color-primary-subtle, #E8F5E9);
+      color: var(--bm-color-primary, #176B50);
+      padding: 2px 6px;
+      border-radius: var(--bm-radius-sm);
+      letter-spacing: 0.05em;
+    }
+
+    .bm-live-text {
+      color: var(--bm-color-text-secondary);
+      margin: 0;
+
+      strong {
+        color: var(--bm-color-text-primary);
+      }
     }
 
     // Mock Banner
@@ -651,6 +697,9 @@ import {
 export class DashboardPageComponent implements OnInit {
   private readonly mockService = inject(DashboardMockService);
   private readonly adminService = inject(AdminMerchantService);
+  private readonly orderService = inject(OrderService);
+  private readonly poolService = inject(PoolService);
+  private readonly productService = inject(ProductService);
   readonly authService = inject(AuthService);
 
   readonly ShoppingBagIcon = ShoppingBag;
@@ -659,6 +708,7 @@ export class DashboardPageComponent implements OnInit {
   readonly ShieldCheckIcon = ShieldCheck;
   readonly ArrowUpRightIcon = ArrowUpRight;
 
+  readonly isLiveStore = signal<boolean>(false);
   readonly metrics = signal<DashboardMetric[]>([]);
   readonly recentOrders = signal<DashboardRecentOrder[]>([]);
   readonly pickupQueue = signal<DashboardPickupItem[]>([]);
@@ -681,6 +731,89 @@ export class DashboardPageComponent implements OnInit {
         },
       });
     }
+
+    if (this.authService.currentMerchant()?.status === 'APPROVED') {
+      this.loadLiveStoreMetrics();
+    }
+  }
+
+  private loadLiveStoreMetrics(): void {
+    forkJoin({
+      orders: this.orderService.listMerchantOrders({ limit: 100 }),
+      readyOrders: this.orderService.listReadyForPickupOrders({ limit: 10 }),
+      pools: this.poolService.listMerchantPools({ limit: 100 }),
+      products: this.productService.listProducts({ limit: 100 }),
+    }).subscribe({
+      next: ({ orders, readyOrders, pools, products }) => {
+        this.isLiveStore.set(true);
+
+        const totalOrders = orders.pagination?.total ?? orders.data.length;
+        const placedCount = orders.data.filter((o) => o.status === 'PLACED').length;
+        const completedCount = orders.data.filter((o) => o.status === 'COMPLETED').length;
+        const readyCount = readyOrders.pagination?.total ?? readyOrders.data.length;
+        const activePools = pools.data.filter((p) => p.status === 'ACTIVE').length;
+        const totalProducts = products.pagination?.total ?? products.data.length;
+
+        this.metrics.set([
+          {
+            label: 'Total Store Orders',
+            value: totalOrders,
+            subtext: `${completedCount} fulfilled, ${placedCount} new`,
+            trend: totalOrders > 0 ? 'Live store sync' : 'Awaiting first order',
+            trendType: 'positive',
+          },
+          {
+            label: 'Ready for Pickup',
+            value: readyCount,
+            subtext: 'Awaiting customer OTP verification',
+            trend: readyCount > 0 ? 'Action required at counter' : 'Counter clear',
+            trendType: readyCount > 0 ? 'neutral' : 'positive',
+          },
+          {
+            label: 'Active Campaigns',
+            value: activePools,
+            subtext: `${pools.data.length} total group pools`,
+            trend: activePools > 0 ? 'Pooling active' : 'Launch new pool',
+            trendType: 'positive',
+          },
+          {
+            label: 'Catalog Products',
+            value: totalProducts,
+            subtext: 'Available for community buying',
+            trend: 'In store',
+            trendType: 'positive',
+          },
+        ]);
+
+        if (orders.data.length > 0) {
+          const mappedOrders: DashboardRecentOrder[] = orders.data.slice(0, 5).map((o) => ({
+            id: o.id,
+            orderNumber: o.orderNumber,
+            customerName: `Customer #${o.userId.slice(-4).toUpperCase()}`,
+            itemsCount: o.items.reduce((s, it) => s + it.quantity, 0),
+            totalAmount: o.finalAmount,
+            status: o.status === 'PLACED' ? 'PENDING' : (o.status as any),
+            poolName: o.items[0]?.productName || `Pool #${o.poolId.slice(-4)}`,
+            createdAt: o.createdAt,
+          }));
+          this.recentOrders.set(mappedOrders);
+        }
+
+        if (readyOrders.data.length > 0) {
+          const mappedPickups: DashboardPickupItem[] = readyOrders.data.slice(0, 5).map((o) => ({
+            id: o.id,
+            pickupCode: o.orderNumber,
+            customerName: `Customer #${o.userId.slice(-4).toUpperCase()}`,
+            customerPhone: 'WhatsApp Code Dispatched',
+            itemsCount: o.items.reduce((s, it) => s + it.quantity, 0),
+            otpStatus: 'PENDING_OTP',
+            readySince: o.readyForPickupAt || o.updatedAt,
+          }));
+          this.pickupQueue.set(mappedPickups);
+        }
+      },
+      error: () => {},
+    });
   }
 
   getOrderBadgeVariant(status: DashboardRecentOrder['status']): 'success' | 'warning' | 'info' | 'neutral' | 'danger' {
