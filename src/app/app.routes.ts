@@ -117,6 +117,14 @@ export const routes: Routes = [
             (m) => m.AdminMerchantDetailComponent,
           ),
       },
+      {
+        path: 'admin/indexing',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/admin/pages/indexing/indexing.component').then(
+            (m) => m.AdminIndexingPageComponent,
+          ),
+      },
 
       {
         path: '',

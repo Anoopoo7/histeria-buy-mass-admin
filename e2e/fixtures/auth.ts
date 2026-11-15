@@ -112,4 +112,36 @@ export async function setupMockAuthenticatedSession(
       }),
     });
   });
+
+  // Common admin routes to prevent uncaught 401s when testing as ADMIN
+  await page.route(/\/api\/v1\/admin\/merchants(\/.*|\?.*)?$/, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ applications: [] }),
+    });
+  });
+
+  await page.route(/\/api\/v1\/admin\/orders\/failures(\?.*)?$/, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        failedPickupNotifications: [],
+        orderNotificationFailures: [],
+        expiredOrLockedPickups: [],
+      }),
+    });
+  });
+
+  await page.route(/\/api\/v1\/admin\/orders(\?.*)?$/, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: [],
+        pagination: { page: 1, limit: 25, total: 0, totalPages: 1 },
+      }),
+    });
+  });
 }

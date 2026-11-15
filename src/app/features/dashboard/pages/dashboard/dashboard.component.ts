@@ -10,6 +10,7 @@ import {
   Boxes,
   CheckCircle2,
   Clock,
+  Database,
   Layers,
   LucideAngularModule,
   Package,
@@ -363,6 +364,10 @@ import {
                 <a routerLink="/orders" class="bm-quick-item">
                   <lucide-icon [img]="ShoppingBagIcon" [size]="16"></lucide-icon>
                   <span>Platform Orders & Failures</span>
+                </a>
+                <a routerLink="/admin/indexing" class="bm-quick-item">
+                  <lucide-icon [img]="DatabaseIcon" [size]="16"></lucide-icon>
+                  <span>Search Cluster Indexing</span>
                 </a>
               }
               <a routerLink="/campaigns" class="bm-quick-item">
@@ -1057,6 +1062,7 @@ export class DashboardPageComponent implements OnInit {
   readonly ArrowUpRightIcon = ArrowUpRight;
   readonly RefreshCwIcon = RefreshCw;
   readonly CheckCircle2Icon = CheckCircle2;
+  readonly DatabaseIcon = Database;
 
   readonly isLiveStore = signal<boolean>(false);
   readonly isLoading = signal<boolean>(true);

@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import {
   Boxes,
   ChevronDown,
+  Database,
   Layers,
   LayoutDashboard,
   LogOut,
@@ -117,6 +118,15 @@ import { DropdownComponent } from '../../shared/ui/dropdown/dropdown.component';
                 @if (pendingApplicationsCount() > 0) {
                   <span class="bm-nav-badge-pill">{{ pendingApplicationsCount() }}</span>
                 }
+              </a>
+              <a
+                routerLink="/admin/indexing"
+                routerLinkActive="active"
+                (click)="closeMobileMenu()"
+                class="bm-nav-item"
+              >
+                <lucide-icon [img]="DatabaseIcon" [size]="18"></lucide-icon>
+                <span>Search Indexing</span>
               </a>
             </div>
           }
@@ -665,6 +675,7 @@ export class DashboardShellComponent implements OnInit {
   readonly CloseIcon = X;
   readonly ChevronDownIcon = ChevronDown;
   readonly ShieldCheckIcon = ShieldCheck;
+  readonly DatabaseIcon = Database;
 
   readonly isMobileMenuOpen = signal<boolean>(false);
   readonly pendingApplicationsCount = signal<number>(0);
