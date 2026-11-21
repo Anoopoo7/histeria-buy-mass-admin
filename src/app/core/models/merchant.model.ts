@@ -5,6 +5,20 @@ export type MerchantStatus =
   | 'REJECTED'
   | 'SUSPENDED';
 
+export const MERCHANT_BUSINESS_TYPES = [
+  'Multi-Brand Car Dealership',
+  'Authorized New Car Showroom',
+  'Two-Wheeler & Motorcycle Dealership',
+  'Electric Vehicle (EV) Dealership (Cars & Bikes)',
+  'Certified Pre-Owned Cars Showroom',
+  'Certified Pre-Owned Two-Wheelers Showroom',
+  'Superbike & Premium Motorcycle Studio',
+  'Commercial Vehicles & Fleet Dealership',
+  'Auto Dealership & Vehicle Distribution',
+] as const;
+
+export type MerchantBusinessType = (typeof MERCHANT_BUSINESS_TYPES)[number];
+
 export type PhotoCategory = 'EXTERIOR' | 'INTERIOR' | 'DISPLAY_AREA' | 'OTHER';
 
 export interface StorePhoto {

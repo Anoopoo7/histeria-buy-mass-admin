@@ -30,6 +30,7 @@ import { AuthService } from '../../../../core/auth/services/auth.service';
 import {
   BusinessDocumentType,
   CreateMerchantRequest,
+  MERCHANT_BUSINESS_TYPES,
   MerchantRecord,
   PhotoCategory,
   UpdateMerchantRequest,
@@ -65,16 +66,7 @@ export const KERALA_DISTRICTS = [
   'Wayanad',
 ];
 
-export const BUSINESS_TYPES = [
-  'Grocery & Supermarket',
-  'Fresh Produce & Vegetables',
-  'Spices & Plantation Goods',
-  'Organic & Health Food',
-  'Bakery & Confectionery',
-  'Meat & Fish Store',
-  'Stationery & General Store',
-  'Other Retail',
-];
+export const BUSINESS_TYPES = [...MERCHANT_BUSINESS_TYPES];
 
 @Component({
   selector: 'bm-my-store',
@@ -194,8 +186,8 @@ export const BUSINESS_TYPES = [
                 <!-- Store Name -->
                 <bm-input
                   id="store-name"
-                  label="Store / Business Name"
-                  placeholder="e.g. Green Valley Fresh Mart"
+                  label="Dealership / Showroom Name"
+                  placeholder="e.g. Apex Motors & Two-Wheelers"
                   [required]="true"
                   formControlName="storeName"
                   [error]="getCreateError('storeName')"
@@ -207,7 +199,7 @@ export const BUSINESS_TYPES = [
                   label="Business Category"
                   [required]="true"
                   [options]="businessTypes"
-                  placeholder="Select business category"
+                  placeholder="Select vehicle dealership category"
                   formControlName="businessType"
                   [error]="getCreateError('businessType')"
                 ></bm-select>
@@ -216,8 +208,8 @@ export const BUSINESS_TYPES = [
                 <div class="bm-full-col">
                   <bm-input
                     id="store-desc"
-                    label="Store Description & Specialties"
-                    placeholder="Briefly describe your store, primary goods sold, and pickup facility"
+                    label="Showroom Description & Vehicle Brands"
+                    placeholder="Briefly describe your showroom, vehicle brands (Cars & Bikes), and delivery/pickup facilities"
                     [required]="true"
                     formControlName="description"
                     [error]="getCreateError('description')"
@@ -1878,20 +1870,20 @@ export class MyStoreComponent implements OnInit, OnDestroy {
   readonly businessTypes = BUSINESS_TYPES;
 
   readonly photoCategoryOptions = [
-    { label: 'Exterior Storefront', value: 'EXTERIOR', description: 'Street view showing store entrance and board' },
-    { label: 'Interior Store Layout', value: 'INTERIOR', description: 'Overview of retail space and shelves' },
-    { label: 'Product Display Counter', value: 'DISPLAY_AREA', description: 'Main goods showcase and racks' },
-    { label: 'Storage & Stockroom', value: 'STORAGE', description: 'Bulk storage or inventory area' },
-    { label: 'Billing / POS Counter', value: 'BILLING_COUNTER', description: 'Customer checkout station' },
-    { label: 'Other Verification Photo', value: 'OTHER', description: 'Supporting photo proof' },
+    { label: 'Exterior Showroom & Entrance', value: 'EXTERIOR', description: 'Street view showing showroom facade and brand signage' },
+    { label: 'Showroom Floor & Display Area', value: 'INTERIOR', description: 'Overview of cars/bikes display area and customer lounge' },
+    { label: 'Vehicle Display Bays', value: 'DISPLAY_AREA', description: 'Close-up of vehicles on display or demo units' },
+    { label: 'Pre-Delivery & Stockyard', value: 'STORAGE', description: 'Pre-delivery inspection (PDI) bay or vehicle stockyard' },
+    { label: 'Sales & Customer Booking Counter', value: 'BILLING_COUNTER', description: 'Sales consultant desk and customer booking counter' },
+    { label: 'Other Verification Photo', value: 'OTHER', description: 'Supporting dealership or franchise proof' },
   ];
 
   readonly docTypeOptions = [
     { label: 'GST Registration Certificate', value: 'GST_CERTIFICATE', description: 'Government GST document' },
-    { label: 'Business PAN Card', value: 'PAN_CARD', description: 'Income tax permanent account number' },
+    { label: 'Business PAN Card', value: 'PAN_CARD', description: 'Dealership / corporate PAN' },
     { label: 'Trade License / Local Permit', value: 'TRADE_LICENSE', description: 'Panchayath / Municipality permit' },
-    { label: 'FSSAI Food Safety License', value: 'FSSAI_LICENSE', description: 'Food business operator registration' },
-    { label: 'Store Lease / Rental Agreement', value: 'RENTAL_AGREEMENT', description: 'Storefront ownership or lease' },
+    { label: 'Dealership / Franchise License', value: 'FSSAI_LICENSE', description: 'Authorized OEM brand dealership or distribution license' },
+    { label: 'Showroom Lease / Rental Agreement', value: 'RENTAL_AGREEMENT', description: 'Showroom ownership or commercial lease deed' },
     { label: 'Other Official Business Proof', value: 'OTHER', description: 'Supporting legal establishment document' },
   ];
 

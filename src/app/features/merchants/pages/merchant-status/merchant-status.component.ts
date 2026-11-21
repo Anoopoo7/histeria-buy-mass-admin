@@ -82,7 +82,7 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
               </div>
               <div class="bm-summary-item">
                 <span class="bm-summary-label">Business Type:</span>
-                <span class="bm-summary-val">{{ merchant()?.businessType || 'Retail Store' }}</span>
+                <span class="bm-summary-val">{{ merchant()?.businessType || 'Vehicle Dealership' }}</span>
               </div>
               <div class="bm-summary-item">
                 <span class="bm-summary-label">District & State:</span>

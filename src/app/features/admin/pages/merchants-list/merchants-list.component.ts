@@ -161,7 +161,7 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
                     <td>
                       <div class="bm-cell-store">
                         <strong class="bm-store-name">{{ app.storeName }}</strong>
-                        <span class="bm-store-type">{{ app.businessType || 'General Retail' }}</span>
+                        <span class="bm-store-type">{{ app.businessType || 'Vehicle Dealership' }}</span>
                       </div>
                     </td>
 

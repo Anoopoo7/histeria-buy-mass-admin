@@ -146,7 +146,7 @@ import { LocationPickerComponent } from '../../../../shared/ui/location-picker/l
                 </div>
                 <div class="bm-info-row">
                   <span class="bm-label">Business Category:</span>
-                  <span class="bm-value">{{ app.businessType || 'General Retail' }}</span>
+                  <span class="bm-value">{{ app.businessType || 'Vehicle Dealership' }}</span>
                 </div>
                 <div class="bm-info-row">
                   <span class="bm-label">Description:</span>
