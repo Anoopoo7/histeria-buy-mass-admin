@@ -153,7 +153,7 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
                       class="bm-input"
                       [class.bm-input-invalid]="isFieldInvalid('name')"
                       formControlName="name"
-                      placeholder="e.g. Kerala Matta Rice (Palakkadan Vadi), Milma Ghee 500ml"
+                      placeholder="e.g. Tata Nexon Fearless Plus S, Royal Enfield Classic 350, Maruti Swift ZXi"
                       maxlength="120"
                     />
                     <div class="bm-field-meta">
@@ -227,7 +227,87 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
                 </div>
               </bm-card>
 
-              <!-- SECTION 2: PRICING & INVENTORY UNIT -->
+              <!-- SECTION 2: VEHICLE TECHNICAL SPECIFICATIONS -->
+              <bm-card title="Vehicle Technical Specifications" subtitle="Fuel type, transmission, model year, and performance metrics">
+                <div class="bm-form-grid">
+                  <!-- Fuel Type -->
+                  <div class="bm-form-col-half">
+                    <label class="bm-label" for="prod-fuel">Fuel / Powertrain Type</label>
+                    <select id="prod-fuel" class="bm-select" formControlName="fuelType">
+                      @for (fuel of fuelTypes; track fuel) {
+                        <option [value]="fuel">{{ fuel }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Transmission -->
+                  <div class="bm-form-col-half">
+                    <label class="bm-label" for="prod-trans">Transmission</label>
+                    <select id="prod-trans" class="bm-select" formControlName="transmission">
+                      @for (trans of transmissionTypes; track trans) {
+                        <option [value]="trans">{{ trans }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Model Year -->
+                  <div class="bm-form-col-half">
+                    <label class="bm-label" for="prod-year">Model Year</label>
+                    <select id="prod-year" class="bm-select" formControlName="modelYear">
+                      @for (yr of modelYears; track yr) {
+                        <option [value]="yr">{{ yr }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <!-- Mileage / Range -->
+                  <div class="bm-form-col-half">
+                    <label class="bm-label" for="prod-mileage">
+                      ARAI Mileage / Battery Range <span class="bm-optional">(e.g. 21.5 km/l or 465 km)</span>
+                    </label>
+                    <input
+                      id="prod-mileage"
+                      type="text"
+                      class="bm-input"
+                      formControlName="mileageRange"
+                      placeholder="e.g. 21.5 km/l or 465 km (IDC)"
+                      maxlength="50"
+                    />
+                  </div>
+
+                  <!-- Engine / Battery Capacity -->
+                  <div class="bm-form-col-half">
+                    <label class="bm-label" for="prod-engine">
+                      Engine / Battery Capacity <span class="bm-optional">(e.g. 1197 cc or 40.5 kWh)</span>
+                    </label>
+                    <input
+                      id="prod-engine"
+                      type="text"
+                      class="bm-input"
+                      formControlName="engineCapacity"
+                      placeholder="e.g. 1197 cc, 349 cc, 40.5 kWh"
+                      maxlength="50"
+                    />
+                  </div>
+
+                  <!-- Exterior Paint / Color -->
+                  <div class="bm-form-col-half">
+                    <label class="bm-label" for="prod-color">
+                      Color / Exterior Paint <span class="bm-optional">(e.g. Stealth Black)</span>
+                    </label>
+                    <input
+                      id="prod-color"
+                      type="text"
+                      class="bm-input"
+                      formControlName="color"
+                      placeholder="e.g. Daytona Grey, Stealth Black, Arctic White"
+                      maxlength="50"
+                    />
+                  </div>
+                </div>
+              </bm-card>
+
+              <!-- SECTION 3: PRICING & INVENTORY UNIT -->
               <bm-card title="Pricing & Sale Unit" subtitle="Configure group-buy selling price and packaging measure">
                 <div class="bm-form-grid">
                   <!-- Group Buying Selling Price -->
@@ -537,12 +617,25 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
 
                   <h3 class="bm-preview-title">{{ previewTitle() }}</h3>
 
+                  <!-- Vehicle Spec Chips -->
+                  <div class="bm-vehicle-spec-chips">
+                    <span class="bm-spec-chip fuel">⛽ {{ previewFuel() }}</span>
+                    <span class="bm-spec-chip transmission">🕹️ {{ previewTransmission() }}</span>
+                    <span class="bm-spec-chip year">📅 {{ previewYear() }}</span>
+                    @if (previewMileage()) {
+                      <span class="bm-spec-chip mileage">⚡ {{ previewMileage() }}</span>
+                    }
+                  </div>
+
                   <div class="bm-preview-pricing">
                     <div class="bm-preview-price-box">
                       <span class="bm-preview-currency">₹</span>
                       <span class="bm-preview-amount">{{ previewPrice() }}</span>
                       <span class="bm-preview-unit">/ {{ previewUnit() }}</span>
                     </div>
+                    @if (formattedPriceInLakhs()) {
+                      <span class="bm-price-lakh-badge">{{ formattedPriceInLakhs() }}</span>
+                    }
                     @if (productForm.get('sku')?.value) {
                       <span class="bm-preview-sku">SKU: {{ productForm.get('sku')?.value }}</span>
                     }
@@ -1324,6 +1417,33 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
       line-height: 1.35;
     }
 
+    .bm-vehicle-spec-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 2px 0 4px 0;
+    }
+
+    .bm-spec-chip {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: var(--bm-color-surface-subtle, #F3F4F6);
+      color: var(--bm-color-text-secondary, #4B5563);
+      border: 1px solid var(--bm-color-border, #E5E7EB);
+    }
+
+    .bm-price-lakh-badge {
+      background: #E6F4ED;
+      color: #176B50;
+      font-weight: 700;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      margin-left: auto;
+    }
+
     .bm-preview-pricing {
       display: flex;
       align-items: baseline;
@@ -1624,7 +1744,24 @@ export class ProductEditorComponent implements OnInit {
   // Constants
   readonly categories = PRODUCT_CATEGORIES;
   readonly units = PRODUCT_UNITS;
-  readonly brandSuggestions = ['Milma', 'Eastern', 'Nirapara', 'Double Horse', 'Kitchen Treasures', 'Brahmins', 'Kera'];
+  readonly brandSuggestions = [
+    'Maruti Suzuki',
+    'Tata Motors',
+    'Hyundai',
+    'Mahindra',
+    'Toyota',
+    'Royal Enfield',
+    'Honda',
+    'Hero',
+    'Bajaj',
+    'TVS',
+    'Ather',
+    'Ola Electric',
+    'Yamaha',
+  ];
+  readonly fuelTypes = ['Petrol', 'Diesel', 'Electric (EV)', 'CNG', 'Strong Hybrid'];
+  readonly transmissionTypes = ['Manual', 'Automatic', 'AMT', 'CVT', 'Direct Drive (EV)'];
+  readonly modelYears = ['2026', '2025', '2024', '2023', '2022'];
 
   // State Signals
   readonly isEditing = signal<boolean>(false);
@@ -1652,8 +1789,14 @@ export class ProductEditorComponent implements OnInit {
     brand: ['', [Validators.maxLength(60)]],
     sku: ['', [Validators.maxLength(40)]],
     price: [null, [Validators.required, Validators.min(1)]],
-    unit: ['piece', [Validators.required]],
+    unit: ['unit', [Validators.required]],
     description: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(2000)]],
+    fuelType: ['Petrol'],
+    transmission: ['Manual'],
+    modelYear: ['2025'],
+    mileageRange: [''],
+    engineCapacity: [''],
+    color: [''],
   });
 
   // Breadcrumbs
@@ -1673,14 +1816,27 @@ export class ProductEditorComponent implements OnInit {
 
   // Preview Card computeds
   readonly productNameHeader = computed(() => this.productForm.get('name')?.value);
-  readonly previewTitle = computed(() => this.productForm.get('name')?.value || 'Untitled Product');
-  readonly previewCategory = computed(() => this.productForm.get('category')?.value || 'Grocery');
+  readonly previewTitle = computed(() => this.productForm.get('name')?.value || 'Untitled Vehicle');
+  readonly previewCategory = computed(() => this.productForm.get('category')?.value || 'Cars - Hatchback');
   readonly previewBrand = computed(() => this.productForm.get('brand')?.value);
+  readonly previewFuel = computed(() => this.productForm.get('fuelType')?.value || 'Petrol');
+  readonly previewTransmission = computed(() => this.productForm.get('transmission')?.value || 'Manual');
+  readonly previewYear = computed(() => this.productForm.get('modelYear')?.value || '2025');
+  readonly previewMileage = computed(() => this.productForm.get('mileageRange')?.value);
   readonly previewPrice = computed(() => {
     const val = this.productForm.get('price')?.value;
     return val !== null && val !== undefined && val !== '' ? Number(val).toFixed(2) : '0.00';
   });
-  readonly previewUnit = computed(() => this.productForm.get('unit')?.value || 'piece');
+  readonly formattedPriceInLakhs = computed(() => {
+    const val = Number(this.productForm.get('price')?.value);
+    if (!val || isNaN(val)) return null;
+    if (val >= 100000) {
+      const lakhs = (val / 100000).toFixed(2);
+      return `₹${lakhs} Lakh`;
+    }
+    return `₹${val.toLocaleString('en-IN')}`;
+  });
+  readonly previewUnit = computed(() => this.productForm.get('unit')?.value || 'unit');
   readonly previewDescription = computed(() => {
     return this.productForm.get('description')?.value || 'Enter a product description to see how it looks to customers...';
   });

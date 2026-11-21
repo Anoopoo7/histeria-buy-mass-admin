@@ -19,23 +19,23 @@ describe('ProductEditorComponent', () => {
     id: 'prod-101',
     storeId: 'store-1',
     ownerUserId: 'user-1',
-    name: 'Palakkadan Matta Rice',
-    description: 'Authentic red parboiled rice from Kerala paddy fields.',
-    category: 'Grocery & Staples',
-    brand: 'Nirapara',
-    sku: 'BM-MATTA-5KG',
-    price: 320,
-    unit: 'kg',
+    name: 'Tata Nexon Fearless Plus S',
+    description: 'Electric SUV with 40.5kWh battery pack and 465km range.',
+    category: 'Cars - Compact & Mid SUV',
+    brand: 'Tata Motors',
+    sku: 'BM-CAR-NEX-01',
+    price: 1450000,
+    unit: 'unit',
     status: 'ACTIVE',
     images: [
       {
         id: 'img-1',
-        url: 'https://res.cloudinary.com/demo/image/upload/matta1.jpg',
+        url: 'https://res.cloudinary.com/demo/image/upload/nexon1.jpg',
         uploadedAt: new Date().toISOString(),
       },
       {
         id: 'img-2',
-        url: 'https://res.cloudinary.com/demo/image/upload/matta2.jpg',
+        url: 'https://res.cloudinary.com/demo/image/upload/nexon2.jpg',
         uploadedAt: new Date().toISOString(),
       },
     ],
@@ -129,11 +129,11 @@ describe('ProductEditorComponent', () => {
 
     it('should create product as draft when valid', fakeAsync(() => {
       component.productForm.patchValue({
-        name: 'Fresh Curry Leaves',
-        category: 'Fresh Vegetables & Fruits',
-        price: 15,
-        unit: 'bundle',
-        description: 'Organically grown fresh curry leaves harvested daily in Wayanad.',
+        name: 'Royal Enfield Classic 350',
+        category: 'Motorcycles - Cruiser & Adventure',
+        price: 220000,
+        unit: 'Bike / Two-Wheeler',
+        description: 'Timeless retro cruiser motorcycle powered by 349cc J-series engine.',
       });
 
       component.saveProduct('DRAFT');
@@ -141,9 +141,9 @@ describe('ProductEditorComponent', () => {
 
       expect(mockProductService.createProduct).toHaveBeenCalledWith(
         jasmine.objectContaining({
-          name: 'Fresh Curry Leaves',
-          price: 15,
-          unit: 'bundle',
+          name: 'Royal Enfield Classic 350',
+          price: 220000,
+          unit: 'Bike / Two-Wheeler',
         }),
       );
       expect(router.navigate).toHaveBeenCalledWith(['/store/products']);
@@ -151,11 +151,11 @@ describe('ProductEditorComponent', () => {
 
     it('should prevent setting status to ACTIVE if zero images exist', () => {
       component.productForm.patchValue({
-        name: 'Fresh Curry Leaves',
-        category: 'Fresh Vegetables & Fruits',
-        price: 15,
-        unit: 'bundle',
-        description: 'Organically grown fresh curry leaves.',
+        name: 'Royal Enfield Classic 350',
+        category: 'Motorcycles - Cruiser & Adventure',
+        price: 220000,
+        unit: 'Bike / Two-Wheeler',
+        description: 'Timeless retro cruiser motorcycle.',
       });
 
       component.saveProduct('ACTIVE');
@@ -173,10 +173,10 @@ describe('ProductEditorComponent', () => {
     });
 
     it('should generate a random SKU when clicking Generate SKU', () => {
-      component.productForm.patchValue({ category: 'Grocery & Staples' });
+      component.productForm.patchValue({ category: 'Cars - Hatchback' });
       component.generateRandomSku();
       const sku = component.productForm.get('sku')?.value;
-      expect(sku).toMatch(/^BM-GRO-\d{4}$/);
+      expect(sku).toMatch(/^BM-CAR-\d{4}$/);
     });
   });
 
@@ -188,17 +188,17 @@ describe('ProductEditorComponent', () => {
     it('should load product details into form and media gallery', () => {
       expect(component.isEditing()).toBeTrue();
       expect(mockProductService.getProduct).toHaveBeenCalledWith('prod-101');
-      expect(component.productForm.get('name')?.value).toBe('Palakkadan Matta Rice');
-      expect(component.productForm.get('price')?.value).toBe(320);
+      expect(component.productForm.get('name')?.value).toBe('Tata Nexon Fearless Plus S');
+      expect(component.productForm.get('price')?.value).toBe(1450000);
       expect(component.productStatus()).toBe('ACTIVE');
       expect(component.currentImages().length).toBe(2);
-      expect(component.breadcrumbs().some((b) => b.label === 'Palakkadan Matta Rice')).toBeTrue();
+      expect(component.breadcrumbs().some((b) => b.label === 'Tata Nexon Fearless Plus S')).toBeTrue();
     });
 
     it('should update existing product on save', fakeAsync(() => {
       component.productForm.patchValue({
-        name: 'Palakkadan Matta Rice 5kg',
-        price: 340,
+        name: 'Tata Nexon Fearless Plus S (Dark Edition)',
+        price: 1490000,
       });
 
       component.saveProduct();
@@ -207,8 +207,8 @@ describe('ProductEditorComponent', () => {
       expect(mockProductService.updateProduct).toHaveBeenCalledWith(
         'prod-101',
         jasmine.objectContaining({
-          name: 'Palakkadan Matta Rice 5kg',
-          price: 340,
+          name: 'Tata Nexon Fearless Plus S (Dark Edition)',
+          price: 1490000,
         }),
       );
       expect(mockToastService.success).toHaveBeenCalled();

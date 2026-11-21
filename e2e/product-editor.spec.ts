@@ -6,13 +6,13 @@ test.describe('Product Creation & Editing Dedicated Page E2E', () => {
     id: 'prod-e2e-201',
     storeId: 'store-e2e-101',
     ownerUserId: 'user-e2e-101',
-    name: 'Kerala Cardamom 250g',
-    description: 'High-altitude aromatic green cardamom pods from Idukki plantations.',
-    category: 'Spices & Condiments',
-    brand: 'Nadan Spices',
-    sku: 'BM-SPICE-CARD-250',
-    price: 650,
-    unit: 'packet',
+    name: 'Tata Punch EV Empowered Plus',
+    description: 'High-voltage electric compact SUV with 35kWh battery pack and 421km certified driving range.',
+    category: 'Cars - Electric Vehicles (EV)',
+    brand: 'Tata Motors',
+    sku: 'BM-CAR-PUN-01',
+    price: 1199000,
+    unit: 'Vehicle (Unit)',
     status: 'ACTIVE',
     images: [
       {
@@ -106,19 +106,19 @@ test.describe('Product Creation & Editing Dedicated Page E2E', () => {
     await page.goto('/store/products/new');
 
     // Fill in product details
-    await page.getByLabel(/Product Name/i).fill('Wayanad Robusta Coffee 500g');
-    await page.getByLabel(/Category/i).selectOption('Beverages & Tea');
-    await page.getByLabel(/Selling Price/i).fill('280');
-    await page.getByLabel(/Unit of Measure/i).selectOption('pack');
-    await page.getByLabel(/Detailed Description/i).fill('Single-origin dark roast Robusta coffee beans grown under rainforest canopy in Meppadi.');
+    await page.getByLabel(/Product Name/i).fill('Royal Enfield Hunter 350 Dapper Grey');
+    await page.getByLabel(/Category/i).selectOption('Motorcycles - Sports & Naked');
+    await page.getByLabel(/Selling Price/i).fill('169000');
+    await page.getByLabel(/Unit of Measure/i).selectOption('Bike / Two-Wheeler');
+    await page.getByLabel(/Detailed Description/i).fill('Agile retro roadster with 349cc single-cylinder engine and dual-channel ABS.');
 
     // Click "Save as Draft"
     await page.getByRole('button', { name: /Save as Draft/i }).first().click();
 
     // Verify create request was made
     expect(createPayload).toBeTruthy();
-    expect(createPayload.name).toBe('Wayanad Robusta Coffee 500g');
-    expect(createPayload.price).toBe(280);
+    expect(createPayload.name).toBe('Royal Enfield Hunter 350 Dapper Grey');
+    expect(createPayload.price).toBe(169000);
 
     // Verify navigated back to products list
     await expect(page).toHaveURL(/.*\/store\/products/);
@@ -160,16 +160,16 @@ test.describe('Product Creation & Editing Dedicated Page E2E', () => {
     await page.goto(`/store/products/${mockExistingProduct.id}/edit`);
 
     // 1. Verify product details loaded in form
-    await expect(page.getByLabel(/Product Name/i)).toHaveValue('Kerala Cardamom 250g');
-    await expect(page.getByLabel(/Selling Price/i)).toHaveValue('650');
+    await expect(page.getByLabel(/Product Name/i)).toHaveValue('Tata Punch EV Empowered Plus');
+    await expect(page.getByLabel(/Selling Price/i)).toHaveValue('1199000');
 
     // 2. Verify image gallery shows attached photo
     await expect(page.getByText('Attached Product Images (1)')).toBeVisible();
     await expect(page.getByText('Primary Cover')).toBeVisible();
 
     // 3. Verify live storefront preview reflects existing product
-    await expect(page.getByRole('heading', { name: 'Kerala Cardamom 250g' })).toBeVisible();
-    await expect(page.locator('.bm-preview-amount')).toHaveText('650.00');
+    await expect(page.getByRole('heading', { name: 'Tata Punch EV Empowered Plus' })).toBeVisible();
+    await expect(page.locator('.bm-preview-amount')).toHaveText('1199000.00');
 
     // 4. Open Archive modal and confirm
     await page.getByRole('button', { name: /^Archive$/i }).click();
