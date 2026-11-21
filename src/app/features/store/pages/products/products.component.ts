@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import {
   AlertCircle,
   Archive,
@@ -85,10 +85,12 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
           </bm-button>
 
           @if (isStoreApproved()) {
-            <bm-button variant="primary" size="md" (btnClick)="openCreateModal()">
-              <lucide-icon [img]="PlusIcon" [size]="16" bmLeading></lucide-icon>
-              <span>Add New Product</span>
-            </bm-button>
+            <a routerLink="/store/products/new">
+              <bm-button variant="primary" size="md">
+                <lucide-icon [img]="PlusIcon" [size]="16" bmLeading></lucide-icon>
+                <span>Add New Product</span>
+              </bm-button>
+            </a>
           }
         </div>
       </bm-page-header>
@@ -226,10 +228,12 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
             </div>
             @if (isStoreApproved()) {
               <div bmEmptyActions style="margin-top: 14px;">
-                <bm-button variant="primary" size="md" (btnClick)="openCreateModal()">
-                  <lucide-icon [img]="PlusIcon" [size]="16" bmLeading></lucide-icon>
-                  <span>Create First Product</span>
-                </bm-button>
+                <a routerLink="/store/products/new">
+                  <bm-button variant="primary" size="md">
+                    <lucide-icon [img]="PlusIcon" [size]="16" bmLeading></lucide-icon>
+                    <span>Create First Product</span>
+                  </bm-button>
+                </a>
               </div>
             }
           </bm-empty-state>
@@ -254,10 +258,10 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
                     <!-- Product Title, Image & Description -->
                     <td>
                       <div class="bm-product-meta-cell">
-                        <div
+                        <a
+                          [routerLink]="['/store/products', prod.id, 'edit']"
                           class="bm-product-thumb"
-                          (click)="openMediaModal(prod)"
-                          title="Manage product images"
+                          title="Manage product details & photos"
                         >
                           @if (prod.images && prod.images.length > 0) {
                             <img [src]="prod.images[0].url" [alt]="prod.name" class="bm-thumb-img" />
@@ -269,9 +273,11 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
                               <lucide-icon [img]="ImageIcon" [size]="20"></lucide-icon>
                             </div>
                           }
-                        </div>
+                        </a>
                         <div class="bm-product-title-group">
-                          <strong class="bm-product-name" (click)="openEditModal(prod)">{{ prod.name }}</strong>
+                          <a [routerLink]="['/store/products', prod.id, 'edit']" class="bm-product-name-link">
+                            <strong class="bm-product-name">{{ prod.name }}</strong>
+                          </a>
                           <p class="bm-product-desc">{{ prod.description }}</p>
                         </div>
                       </div>
@@ -359,14 +365,15 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
                         }
 
                         <!-- Edit Product -->
-                        <button
-                          type="button"
-                          class="bm-icon-action-btn"
-                          (click)="openEditModal(prod)"
-                          title="Edit product details"
-                        >
-                          <lucide-icon [img]="EditIcon" [size]="16"></lucide-icon>
-                        </button>
+                        <a [routerLink]="['/store/products', prod.id, 'edit']" class="bm-icon-link">
+                          <button
+                            type="button"
+                            class="bm-icon-action-btn"
+                            title="Edit product details & photos"
+                          >
+                            <lucide-icon [img]="EditIcon" [size]="16"></lucide-icon>
+                          </button>
+                        </a>
 
                         <!-- Archive Product (if not already archived) -->
                         @if (prod.status !== 'ARCHIVED') {
@@ -1831,6 +1838,22 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
       color: var(--bm-color-text-muted);
     }
 
+    .bm-product-name-link {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+
+      &:hover .bm-product-name {
+        color: var(--bm-color-primary);
+        text-decoration: underline;
+      }
+    }
+
+    .bm-icon-link {
+      text-decoration: none;
+      display: inline-flex;
+    }
+
     .bm-confirm-text {
       font-size: var(--bm-font-size-sm);
       color: var(--bm-color-text-primary);
@@ -1847,6 +1870,7 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
 })
 export class ProductsPageComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
   readonly productService = inject(ProductService);
   readonly authService = inject(AuthService);
   readonly cloudinaryService = inject(CloudinaryService);
@@ -2050,37 +2074,11 @@ export class ProductsPageComponent implements OnInit {
   // =========================================================================
 
   openCreateModal(): void {
-    this.isEditing.set(false);
-    this.editingProductId.set(null);
-    this.modalErrorMessage.set(null);
-    this.productForm.reset({
-      name: '',
-      description: '',
-      category: PRODUCT_CATEGORIES[0],
-      price: null,
-      unit: 'piece',
-      brand: '',
-      sku: '',
-      status: 'DRAFT',
-    });
-    this.showProductModal.set(true);
+    this.router.navigate(['/store/products/new']);
   }
 
   openEditModal(product: ProductRecord): void {
-    this.isEditing.set(true);
-    this.editingProductId.set(product.id);
-    this.modalErrorMessage.set(null);
-    this.productForm.patchValue({
-      name: product.name,
-      description: product.description,
-      category: product.category,
-      price: product.price,
-      unit: product.unit,
-      brand: product.brand || '',
-      sku: product.sku || '',
-      status: product.status,
-    });
-    this.showProductModal.set(true);
+    this.router.navigate(['/store/products', product.id, 'edit']);
   }
 
   closeProductModal(): void {

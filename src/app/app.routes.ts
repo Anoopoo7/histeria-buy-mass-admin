@@ -80,6 +80,27 @@ export const routes: Routes = [
           import('./features/store/pages/products/products.component').then((m) => m.ProductsPageComponent),
       },
       {
+        path: 'store/products/new',
+        loadComponent: () =>
+          import('./features/store/pages/product-editor/product-editor.component').then(
+            (m) => m.ProductEditorComponent,
+          ),
+      },
+      {
+        path: 'store/products/:id/edit',
+        loadComponent: () =>
+          import('./features/store/pages/product-editor/product-editor.component').then(
+            (m) => m.ProductEditorComponent,
+          ),
+      },
+      {
+        path: 'store/products/:id',
+        loadComponent: () =>
+          import('./features/store/pages/product-editor/product-editor.component').then(
+            (m) => m.ProductEditorComponent,
+          ),
+      },
+      {
         path: 'store/inventory',
         loadComponent: () =>
           import('./features/store/pages/products/products.component').then((m) => m.ProductsPageComponent),
