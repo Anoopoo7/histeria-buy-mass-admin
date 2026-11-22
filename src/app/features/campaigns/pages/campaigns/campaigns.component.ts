@@ -21,6 +21,7 @@ import {
   DollarSign,
   Edit3,
   Eye,
+  Image,
   Layers,
   LucideAngularModule,
   Pause,
@@ -34,6 +35,7 @@ import {
   ShoppingBag,
   Tag,
   Trash2,
+  Upload,
   Users,
   X,
 } from 'lucide-angular';
@@ -48,6 +50,7 @@ import {
 } from '../../../../core/models/pool.model';
 import { ProductRecord } from '../../../../core/models/product.model';
 import { ApiError } from '../../../../core/services/api-client.service';
+import { CloudinaryService } from '../../../../core/services/cloudinary.service';
 import { PoolService } from '../../../../core/services/pool.service';
 import { ProductService } from '../../../../core/services/product.service';
 import { ToastService } from '../../../../core/services/toast.service';
@@ -321,17 +324,24 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
               <div class="bm-pool-card" [class.bm-pool-card-active]="pool.status === 'ACTIVE'">
                 <!-- Top Row: Title, Status Badge, Admin info -->
                 <div class="bm-pool-header-row">
-                  <div class="bm-pool-title-group">
-                    <div class="bm-title-badge-wrap">
-                      <h3 class="bm-pool-title">{{ pool.title }}</h3>
-                      <span class="bm-status-pill" [attr.data-status]="pool.status">
-                        {{ formatStatusLabel(pool.status) }}
-                      </span>
-                    </div>
-
-                    @if (pool.description) {
-                      <p class="bm-pool-desc">{{ pool.description }}</p>
+                  <div class="bm-pool-card-main-info">
+                    @if (pool.primaryImageUrl) {
+                      <div class="bm-pool-thumb-box">
+                        <img [src]="pool.primaryImageUrl" [alt]="pool.title" class="bm-pool-thumb-img" />
+                      </div>
                     }
+                    <div class="bm-pool-title-group">
+                      <div class="bm-title-badge-wrap">
+                        <h3 class="bm-pool-title">{{ pool.title }}</h3>
+                        <span class="bm-status-pill" [attr.data-status]="pool.status">
+                          {{ formatStatusLabel(pool.status) }}
+                        </span>
+                      </div>
+
+                      @if (pool.description) {
+                        <p class="bm-pool-desc">{{ pool.description }}</p>
+                      }
+                    </div>
                   </div>
 
                   <!-- Quick Stats Pill (Participants & Target) -->
@@ -603,10 +613,113 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
                 </div>
               </div>
 
+              <!-- Section: Campaign Banner & Primary Image -->
+              <div class="bm-form-section">
+                <div class="bm-section-header-row">
+                  <div>
+                    <h4 class="bm-section-heading">2. Pool Banner / Primary Image</h4>
+                    <p class="bm-section-sub">
+                      Upload a banner for this pool. It will be used as the primary image across search, explore, showroom campaigns, and pool details hero.
+                    </p>
+                  </div>
+                  <span class="bm-badge-optional">Recommended</span>
+                </div>
+
+                <!-- Active Uploaded / Selected Image Preview -->
+                @if (poolBannerUrl()) {
+                  <div class="bm-banner-preview-box">
+                    <img [src]="poolBannerUrl()" alt="Pool Banner" class="bm-banner-preview-img" />
+                    <div class="bm-banner-actions">
+                      <div class="bm-banner-meta">
+                        <span class="bm-banner-tag">Primary Pool Banner</span>
+                        <span class="bm-banner-url-hint">{{ poolBannerUrl() }}</span>
+                      </div>
+                      <button
+                        type="button"
+                        class="bm-banner-remove-btn"
+                        (click)="removePoolBanner()"
+                        [disabled]="isUploadingBanner()"
+                        title="Remove banner"
+                      >
+                        <lucide-icon [img]="TrashIcon" [size]="14"></lucide-icon>
+                        <span>Remove Banner</span>
+                      </button>
+                    </div>
+                  </div>
+                } @else {
+                  <!-- Dropzone / File Picker -->
+                  <div
+                    class="bm-banner-dropzone"
+                    [class.bm-dropzone-active]="bannerDragActive()"
+                    [class.bm-dropzone-disabled]="isUploadingBanner()"
+                    (dragover)="onBannerDragOver($event)"
+                    (dragleave)="bannerDragActive.set(false)"
+                    (drop)="onBannerDrop($event)"
+                  >
+                    <input
+                      #bannerFileInput
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      class="bm-file-hidden"
+                      (change)="onBannerFileSelected($event)"
+                      [disabled]="isUploadingBanner()"
+                    />
+
+                    <div class="bm-dropzone-content">
+                      <div class="bm-dropzone-icon">
+                        @if (isUploadingBanner()) {
+                          <lucide-icon [img]="RefreshIcon" [size]="28" class="bm-spin text-primary"></lucide-icon>
+                        } @else {
+                          <lucide-icon [img]="UploadIcon" [size]="28" class="text-primary"></lucide-icon>
+                        }
+                      </div>
+                      <div class="bm-dropzone-text">
+                        <strong>{{ isUploadingBanner() ? 'Uploading banner to Cloudinary...' : 'Click to upload or drag & drop campaign banner' }}</strong>
+                        <p>PNG, JPG or WebP up to 10MB (recommended 1200×600 or 800×600 banner)</p>
+                      </div>
+                      <bm-button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        (btnClick)="bannerFileInput.click()"
+                        [disabled]="isUploadingBanner()"
+                      >
+                        <lucide-icon [img]="ImageIcon" [size]="14" bmLeading></lucide-icon>
+                        <span>Select Banner from Device</span>
+                      </bm-button>
+                    </div>
+                  </div>
+
+                  <!-- Direct URL Fallback -->
+                  <div class="bm-url-input-row">
+                    <span class="bm-or-divider">or enter image URL</span>
+                    <div class="bm-url-input-group">
+                      <input
+                        type="url"
+                        class="bm-input-control"
+                        placeholder="https://images.unsplash.com/... or https://res.cloudinary.com/..."
+                        [value]="customBannerInput()"
+                        (input)="onCustomBannerInput($event)"
+                        (keydown.enter)="$event.preventDefault(); applyCustomBannerUrl()"
+                      />
+                      <bm-button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        (btnClick)="applyCustomBannerUrl()"
+                        [disabled]="!customBannerInput().trim()"
+                      >
+                        Apply
+                      </bm-button>
+                    </div>
+                  </div>
+                }
+              </div>
+
               <!-- Section: Products Selection -->
               <div class="bm-form-section">
                 <div class="bm-section-header-row">
-                  <h4 class="bm-section-heading">2. Eligible Store Products</h4>
+                  <h4 class="bm-section-heading">3. Eligible Store Products</h4>
                   <span class="bm-selected-count">
                     {{ selectedProductIds().length }} product(s) selected
                   </span>
@@ -649,7 +762,7 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
 
               <!-- Section: Schedule & Duration -->
               <div class="bm-form-section">
-                <h4 class="bm-section-heading">3. Schedule & Duration</h4>
+                <h4 class="bm-section-heading">4. Schedule & Duration</h4>
                 <div class="bm-form-grid-2">
                   <div class="bm-field-col">
                     <label class="bm-label required">Start Date & Time (IST)</label>
@@ -705,7 +818,7 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
               <div class="bm-form-section">
                 <div class="bm-section-header-row">
                   <div>
-                    <h4 class="bm-section-heading">4. Target Volume & Discount Tiers</h4>
+                    <h4 class="bm-section-heading">5. Target Volume & Discount Tiers</h4>
                     <p class="bm-section-sub">
                       Progressive community milestones. Higher total cart value unlocks higher discounts.
                     </p>
@@ -1876,6 +1989,210 @@ import { SkeletonComponent } from '../../../../shared/ui/skeleton/skeleton.compo
       color: #B91C1C;
       font-size: 0.875rem;
     }
+
+    /* Pool Card Thumbnail */
+    .bm-pool-card-main-info {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .bm-pool-thumb-box {
+      width: 64px;
+      height: 48px;
+      border-radius: var(--bm-radius-md);
+      overflow: hidden;
+      border: 1px solid var(--bm-color-border);
+      flex-shrink: 0;
+      background: #0f172a;
+    }
+
+    .bm-pool-thumb-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Modal Banner Section */
+    .bm-badge-optional {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--bm-color-text-muted);
+      background: #F1F5F9;
+      padding: 2px 8px;
+      border-radius: var(--bm-radius-full);
+    }
+
+    .bm-banner-preview-box {
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--bm-radius-md);
+      overflow: hidden;
+      border: 1.5px solid var(--bm-color-primary-border, #A7F3D0);
+      background: #0f172a;
+    }
+
+    .bm-banner-preview-img {
+      width: 100%;
+      max-height: 220px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .bm-banner-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #FFFFFF;
+      border-top: 1px solid var(--bm-color-border);
+    }
+
+    .bm-banner-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .bm-banner-tag {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--bm-color-primary, #176B50);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .bm-banner-url-hint {
+      font-size: 11px;
+      color: var(--bm-color-text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 380px;
+    }
+
+    .bm-banner-remove-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: #FEE2E2;
+      color: #DC2626;
+      border: 1px solid #FCA5A5;
+      border-radius: var(--bm-radius-md);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover:not(:disabled) {
+        background: #FCA5A5;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+
+    .bm-banner-dropzone {
+      border: 2px dashed var(--bm-color-border, #E2E8F0);
+      border-radius: var(--bm-radius-lg);
+      padding: 24px 16px;
+      text-align: center;
+      background: var(--bm-color-surface-subtle, #F8FAFC);
+      transition: all 0.15s ease;
+      cursor: pointer;
+
+      &:hover,
+      &.bm-dropzone-active {
+        border-color: var(--bm-color-primary, #176B50);
+        background: #F0FDF4;
+      }
+
+      &.bm-dropzone-disabled {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+    }
+
+    .bm-file-hidden {
+      display: none;
+    }
+
+    .bm-dropzone-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .bm-dropzone-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #E6F4ED;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bm-dropzone-text {
+      strong {
+        display: block;
+        font-size: 13px;
+        color: var(--bm-color-text-primary);
+        margin-bottom: 2px;
+      }
+
+      p {
+        font-size: 11px;
+        color: var(--bm-color-text-muted);
+        margin: 0;
+      }
+    }
+
+    .bm-url-input-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .bm-or-divider {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--bm-color-text-muted);
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .bm-url-input-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .bm-input-control {
+      flex: 1;
+      height: 36px;
+      border: 1px solid var(--bm-color-border);
+      border-radius: var(--bm-radius-md);
+      padding: 0 12px;
+      font-size: 13px;
+      color: var(--bm-color-text-primary);
+      background: #FFFFFF;
+
+      &:focus {
+        outline: none;
+        border-color: var(--bm-color-primary);
+        box-shadow: 0 0 0 2px var(--bm-color-primary-soft);
+      }
+    }
   `],
 })
 export class CampaignsPageComponent implements OnInit {
@@ -1884,6 +2201,7 @@ export class CampaignsPageComponent implements OnInit {
   readonly productService = inject(ProductService);
   readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
+  private readonly cloudinaryService = inject(CloudinaryService);
 
   // Icons
   readonly LayersIcon = Layers;
@@ -1909,6 +2227,14 @@ export class CampaignsPageComponent implements OnInit {
   readonly ArrowRightIcon = ArrowRight;
   readonly ChevronRightIcon = ChevronRight;
   readonly XIcon = X;
+  readonly UploadIcon = Upload;
+  readonly ImageIcon = Image;
+
+  // Banner upload state
+  readonly poolBannerUrl = signal<string | null>(null);
+  readonly isUploadingBanner = signal<boolean>(false);
+  readonly bannerDragActive = signal<boolean>(false);
+  readonly customBannerInput = signal<string>('');
 
   // Role & Scope State
   readonly isAdmin = computed(() => this.authService.userRole() === 'ADMIN');
@@ -2128,6 +2454,8 @@ export class CampaignsPageComponent implements OnInit {
     this.isEditing.set(false);
     this.editingPoolId.set(null);
     this.modalErrorMessage.set(null);
+    this.poolBannerUrl.set(null);
+    this.customBannerInput.set('');
 
     // Default start time: 2 hours from now formatted for datetime-local
     const defaultStart = new Date(Date.now() + 2 * 60 * 60 * 1000);
@@ -2158,6 +2486,8 @@ export class CampaignsPageComponent implements OnInit {
     this.isEditing.set(true);
     this.editingPoolId.set(pool.id);
     this.modalErrorMessage.set(null);
+    this.poolBannerUrl.set(pool.primaryImageUrl || null);
+    this.customBannerInput.set('');
 
     const startLocal = this.formatDatetimeLocal(new Date(pool.startsAt));
 
@@ -2186,6 +2516,89 @@ export class CampaignsPageComponent implements OnInit {
   closePoolModal(): void {
     this.showPoolModal.set(false);
     this.editingPoolId.set(null);
+    this.poolBannerUrl.set(null);
+    this.customBannerInput.set('');
+  }
+
+  onBannerDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!this.isUploadingBanner()) {
+      this.bannerDragActive.set(true);
+    }
+  }
+
+  onBannerDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.bannerDragActive.set(false);
+    if (this.isUploadingBanner()) return;
+
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      this.uploadBannerFile(files[0]);
+    }
+  }
+
+  onBannerFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.uploadBannerFile(input.files[0]);
+      input.value = '';
+    }
+  }
+
+  uploadBannerFile(file: File): void {
+    if (!file.type.startsWith('image/')) {
+      this.toast.danger('Please select a valid image file (PNG, JPG, WebP).');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      this.toast.danger('Image size exceeds 10MB limit.');
+      return;
+    }
+
+    this.isUploadingBanner.set(true);
+    this.cloudinaryService.uploadImage(file, 'buymass/pools').subscribe({
+      next: (res) => {
+        const url = res.secure_url || res.url;
+        this.poolBannerUrl.set(url);
+        this.isUploadingBanner.set(false);
+        this.toast.success('Pool banner uploaded successfully!');
+      },
+      error: (err: Error) => {
+        this.isUploadingBanner.set(false);
+        this.toast.danger(err.message || 'Failed to upload pool banner.');
+      },
+    });
+  }
+
+  removePoolBanner(): void {
+    this.poolBannerUrl.set(null);
+    this.customBannerInput.set('');
+  }
+
+  onCustomBannerInput(event: Event): void {
+    const val = (event.target as HTMLInputElement).value || '';
+    this.customBannerInput.set(val);
+  }
+
+  applyCustomBannerUrl(): void {
+    const val = this.customBannerInput().trim();
+    if (!val) return;
+    try {
+      const parsed = new URL(val);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        this.poolBannerUrl.set(val);
+        this.customBannerInput.set('');
+        this.toast.success('Banner URL applied.');
+      } else {
+        this.toast.danger('URL must start with http:// or https://');
+      }
+    } catch {
+      this.toast.danger('Please enter a valid HTTP or HTTPS URL.');
+    }
   }
 
   addTier(targetAmount: number = 2000, discountPercentage: number = 10): void {
@@ -2279,6 +2692,7 @@ export class CampaignsPageComponent implements OnInit {
       const updateDto: UpdatePoolRequest = {
         title: formVal.title.trim(),
         description: formVal.description ? formVal.description.trim() : undefined,
+        primaryImageUrl: this.poolBannerUrl() || undefined,
         productIds: this.selectedProductIds(),
         startsAt: startsAtDate.toISOString(),
         durationMinutes: Number(formVal.durationMinutes),
@@ -2301,6 +2715,7 @@ export class CampaignsPageComponent implements OnInit {
       const createDto: CreatePoolRequest = {
         title: formVal.title.trim(),
         description: formVal.description ? formVal.description.trim() : undefined,
+        primaryImageUrl: this.poolBannerUrl() || undefined,
         productIds: this.selectedProductIds(),
         startsAt: startsAtDate.toISOString(),
         durationMinutes: Number(formVal.durationMinutes),

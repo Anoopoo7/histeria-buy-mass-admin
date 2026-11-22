@@ -36,6 +36,7 @@ export interface PoolRecord {
   importCode?: string;
   title: string;
   description?: string;
+  primaryImageUrl?: string;
   productIds: string[];
   productId?: string;
   products?: PoolProductItem[];
@@ -68,6 +69,7 @@ export interface PoolRecord {
 export interface CreatePoolRequest {
   title: string;
   description?: string;
+  primaryImageUrl?: string;
   productIds: string[];
   startsAt: string;
   durationMinutes: number;
@@ -81,6 +83,7 @@ export interface CreatePoolRequest {
 export interface UpdatePoolRequest {
   title?: string;
   description?: string;
+  primaryImageUrl?: string;
   productIds?: string[];
   startsAt?: string;
   durationMinutes?: number;
